@@ -431,7 +431,7 @@
           <progress id="centuryProgress" max="100" value="0" aria-label="ความคืบหน้าข้ามเวลา 100 ปี"></progress>
           <button type="button" id="cancelCentury">ยกเลิกการข้ามเวลา</button>
         </div>
-        <div class="savebar"><button id="save">💾 บันทึกโลก</button><button id="load">📂 โหลดโลก</button><button id="export">⬇️ ส่งออกไฟล์</button><button id="importBtn">⬆️ นำเข้าไฟล์</button><input type="file" id="importFile" accept=".json,application/json" hidden /></div>
+        <div class="savebar"><button id="save">💾 บันทึกโลก</button><button id="load">📂 โหลดโลก</button><button id="restoreBackup" type="button">🛟 กู้เซฟสำรอง</button><button id="export">⬇️ ส่งออกไฟล์</button><button id="importBtn">⬆️ นำเข้าไฟล์</button><input type="file" id="importFile" accept=".json,application/json" hidden /></div>
         <div class="save-state" id="saveState">ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้ · สามารถส่งออกเป็น JSON ได้</div>
       </section>
       <section>
@@ -449,6 +449,8 @@
  'use strict';
  const C=document.getElementById('world'),ctx=C.getContext('2d');
  const TILE=32,MAX_FAITH=250,SAVE_KEY='divinity_planet_economy_v5',LEGACY_PLANET_KEY='divinity_one_planet_v4',LEGACY_GALAXY_KEY='divinity_galaxy_age_v3',OLD_SAVE_KEY='divinity_living_world_v2',SAVE_VERSION=5,POP_CAP=300;
+ const BACKUP_SAVE_KEY=SAVE_KEY+'_backup';
+ let saveLocked=false,lastBackupAt=0;
  let W=64,H=40; // New planets begin at settlement-region scale, saved 32×20 worlds expand safely.
  const MAP_TIERS=[[0,64,40],[25,80,50],[65,96,60],[130,112,70],[210,128,80]];
  const E=id=>document.getElementById(id);
@@ -1505,6 +1507,7 @@
        // No more than one simulated day per browser frame.
        for(let i=0;i<4;i++)tick();
        completed++;
+       if(completed%5===0)saveWorld(true);
        bar.value=completed;
        message.textContent='⏳ ผ่านไป '+completed+' / '+total+' วัน · ประชากร '+
          state.demography.population.toLocaleString('en-US')+' คน';
@@ -1552,6 +1555,7 @@
          if(state.history?.war&&completed>=1)endHistoryWar();
          advanceDemographicYear();
          completed++;
+         if(completed%10===0){d.lastYear=state.year;saveWorld(true);}
          if(completed%20===0){
            for(const human of [...people]){
              human.age+=20;
@@ -1607,19 +1611,54 @@
        '<div class="pop-region"><span>'+safeName(r.name)+'</span><b>'+format(r.population)+'</b></div>').join('');
    }
  }
+ // Verify save compatibility before touching the live game. Older v2–v5
+ // worlds remain playable; invalid primary saves must never overwrite backups.
+ function validSaveData(data){
+   return !!(data&&[2,3,4,5].includes(data.version)&&data.state?.w&&
+     Array.isArray(data.people)&&data.people.length<=POP_CAP&&
+     Array.isArray(data.tiles)&&data.tiles.length>=20&&data.tiles.length<=80&&
+     Array.isArray(data.tiles[0])&&data.tiles[0].length>=32&&data.tiles[0].length<=128&&
+     data.tiles.every(row=>Array.isArray(row)&&row.length===data.tiles[0].length)&&
+     Array.isArray(data.houses));
+ }
+ function worldSnapshot(){
+   return {version:SAVE_VERSION,date:Date.now(),state:{...state,bulk:false},
+     people,tiles,houses,nextPersonId,selectedPersonId,logs};
+ }
  function saveWorld(silent=false){
-   try{const data={version:SAVE_VERSION,date:Date.now(),state:{...state,bulk:false},people,tiles,houses,nextPersonId,selectedPersonId,logs};
-     localStorage.setItem(SAVE_KEY,JSON.stringify(data));if(!silent)E('saveState').textContent='✅ บันทึกโลกในเบราว์เซอร์แล้ว';return true}
-   catch(err){if(!silent)E('saveState').textContent='⚠️ บันทึกไม่ได้: พื้นที่เก็บข้อมูลอาจเต็มหรือถูกปิด';return false}
+   if(saveLocked||!state?.w||!Array.isArray(tiles)||!people){
+     if(!silent)E('saveState').textContent='⚠️ ยังไม่บันทึก: กรุณากู้เซฟสำรองหรือกดโลกใหม่ก่อน';
+     return false;
+   }
+   try{
+     const payload=JSON.stringify(worldSnapshot());
+     const old=localStorage.getItem(SAVE_KEY);
+     // Keep one known-good snapshot before overwriting. Throttle backup
+     // writes to avoid double-quota pressure on mobile browsers.
+     if(old&&Date.now()-lastBackupAt>60000){
+       try{
+         if(validSaveData(JSON.parse(old))){
+           localStorage.setItem(BACKUP_SAVE_KEY,old);
+           lastBackupAt=Date.now();
+         }
+       }catch(backupError){/* Primary save must still be attempted. */}
+     }
+     localStorage.setItem(SAVE_KEY,payload);
+     if(localStorage.getItem(SAVE_KEY)!==payload)throw new Error('ระบบจัดเก็บไม่ยืนยันข้อมูลที่เขียน');
+     if(!silent)E('saveState').textContent='✅ บันทึกโลกแล้ว · ปีดาว '+state.year;
+     return true;
+   }catch(err){
+     E('saveState').textContent='⚠️ บันทึกไม่สำเร็จ: '+(err?.message||'พื้นที่เก็บข้อมูลเต็ม')+
+       ' · กรุณาส่งออกไฟล์ JSON เพื่อเก็บสำรอง';
+     return false;
+   }
  }
  function importWorld(data){
-   if(!data||![2,3,4,5].includes(data.version)||!data.state?.w||!Array.isArray(data.people)||
-     !Array.isArray(data.tiles)||data.tiles.length<20||data.tiles.length>80||
-     !Array.isArray(data.tiles[0])||data.tiles[0].length<32||data.tiles[0].length>128||
-     !data.tiles.every(row=>Array.isArray(row)&&row.length===data.tiles[0].length)||
-     !Array.isArray(data.houses)||data.people.length>POP_CAP){
-     throw new Error('ไฟล์โลกมีขนาดไม่ถูกต้องหรือข้อมูลไม่ครบ')}
-   state=data.state;state.bulk=false;state.pause=true;state.speed=1;ensureCosmos();ensureEconomy();ensureStore();ensureHistory();
+   if(!validSaveData(data))throw new Error('เซฟเสียหายหรือรูปแบบไม่รองรับ');
+   state=data.state;state.bulk=false;
+   state.pause=data.state.pause===true;
+   state.speed=[1,3,10].includes(Number(data.state.speed))?Number(data.state.speed):1;
+   ensureCosmos();ensureEconomy();ensureStore();ensureHistory();
    people=data.people;tiles=data.tiles;H=tiles.length;W=tiles[0].length;houses=data.houses;
    ensureSettlements();ensureDemography();ensureWorldGrowth(true);camera.zoom=.72;focusMap(16,10);nextPersonId=data.nextPersonId||Math.max(0,...people.map(p=>p.id))+1;
    selectedPersonId=data.selectedPersonId||null;logs=(data.logs||[]).slice(0,8);effects=[];acc=0;hover=null;last=0;
@@ -1627,7 +1666,7 @@
    // Old saves had no district field; continue playing without resetting citizens.
    for(const p of people)if(!Number.isInteger(p.district)||p.district>=state.settlements.length)p.district=0;
    E('log').innerHTML=logs.map(x=>`<div class="entry"><b>วัน ${x.day}</b> · ${safeName(x.message)}</div>`).join('');
-   updateUI();pushLog('📂 โหลดโลกสำเร็จ · เวลาหยุดไว้ให้ตรวจสถานะ');
+   updateUI();pushLog('📂 โหลดโลกเดิมสำเร็จ · ประชากรและสิ่งปลูกสร้างยังอยู่ครบ');
  }
 
  function updateUI(){
@@ -2267,23 +2306,87 @@
  E('skinList').addEventListener('click',e=>{const b=e.target.closest('[data-skin]');if(b&&!b.disabled)buyOrEquipSkin(b.dataset.skin)});
  E('topupList').addEventListener('click',e=>{const b=e.target.closest('[data-package]');if(b)showTopupPackage(b.dataset.package)});
  E('save').addEventListener('click',()=>saveWorld());
- E('load').addEventListener('click',()=>{try{const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_PLANET_KEY)||localStorage.getItem(LEGACY_GALAXY_KEY)||localStorage.getItem(OLD_SAVE_KEY);if(!raw){E('saveState').textContent='ยังไม่พบโลกที่บันทึกไว้';return}importWorld(JSON.parse(raw));saveWorld(true);E('saveState').textContent='✅ โหลดโลกและเศรษฐกิจดาวแล้ว (ไม่มีดาว AI)'}catch(e){E('saveState').textContent='⚠️ โหลดไม่ได้: '+e.message}});
+ E('load').addEventListener('click',()=>{
+   const found=loadSavedWorld();
+   if(found.loaded){saveLocked=false;saveWorld(true);E('saveState').textContent='✅ โหลดโลกเดิมแล้ว · ปีดาว '+state.year;}
+   else E('saveState').textContent=found.found?'⚠️ เซฟหลักใช้ไม่ได้ · ลองกู้เซฟสำรองหรือไฟล์ JSON':'ยังไม่พบเซฟในเบราว์เซอร์นี้';
+ });
+ E('restoreBackup').addEventListener('click',()=>{
+   try{
+     const raw=localStorage.getItem(BACKUP_SAVE_KEY);
+     if(!raw)throw new Error('ยังไม่มีไฟล์สำรองในเบราว์เซอร์นี้');
+     const data=JSON.parse(raw);
+     if(!validSaveData(data))throw new Error('ไฟล์สำรองไม่สมบูรณ์');
+     importWorld(data);saveLocked=false;
+     // Do not replace the backup with a newer damaged primary file.
+     lastBackupAt=Date.now();
+     const saved=saveWorld(true);
+     E('saveState').textContent=saved?
+       '✅ กู้เซฟสำรองสำเร็จ · ปีดาว '+state.year+' · บันทึกเป็นเซฟหลักแล้ว':
+       '⚠️ โหลดเซฟสำรองได้ แต่บันทึกลงเครื่องไม่สำเร็จ · โปรดส่งออกไฟล์ JSON';
+   }catch(e){E('saveState').textContent='⚠️ กู้เซฟสำรองไม่ได้: '+e.message;}
+ });
  E('export').addEventListener('click',()=>{const data={version:SAVE_VERSION,date:Date.now(),state:{...state,bulk:false},people,tiles,houses,nextPersonId,selectedPersonId,logs};
     const blob=new Blob([JSON.stringify(data)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download='divinity-world-year-'+state.year+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);E('saveState').textContent='✅ ส่งออกข้อมูลโลกเป็น JSON แล้ว'});
  E('importBtn').addEventListener('click',()=>E('importFile').click());
  E('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());importWorld(data);saveWorld(true);E('saveState').textContent='✅ นำเข้าโลกและบันทึกแล้ว'}catch(err){E('saveState').textContent='⚠️ นำเข้าไม่ได้: '+err.message}e.target.value=''});
  E('goHome').addEventListener('click',()=>saveWorld(true));
- E('reset').addEventListener('click',()=>{if(confirm('เริ่มโลกใหม่? โลกที่บันทึกไว้จะถูกลบ (ไฟล์ JSON ที่ส่งออกยังอยู่)')){try{localStorage.removeItem(SAVE_KEY);localStorage.removeItem(LEGACY_PLANET_KEY);localStorage.removeItem(LEGACY_GALAXY_KEY);localStorage.removeItem(OLD_SAVE_KEY)}catch(e){}acc=0;reset();E('saveState').textContent='🌱 เริ่มโลกใหม่แล้ว'}});
- const params=new URLSearchParams(location.search);
- if(params.get('continue')==='1'){
+ E('reset').addEventListener('click',()=>{
+   if(!confirm('ยืนยันสร้างโลกใหม่? เซฟหลักจะถูกแทนที่ แต่ระบบจะเก็บเซฟก่อนหน้าไว้ในช่องกู้เซฟสำรองหากมีพื้นที่เพียงพอ'))return;
    try{
-     const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_PLANET_KEY)||localStorage.getItem(LEGACY_GALAXY_KEY)||localStorage.getItem(OLD_SAVE_KEY);
-     if(raw){reset();importWorld(JSON.parse(raw));E('saveState').textContent='✅ โหลดโลกเดิมแล้ว · เวลาถูกพักไว้ให้คุณเลือกเล่นต่อ'}
-     else reset();
-   }catch(error){reset();E('saveState').textContent='⚠️ โหลดเซฟเดิมไม่สำเร็จ: '+error.message}
- }else reset();
- window.addEventListener('pagehide',()=>saveWorld(true));
+     const old=localStorage.getItem(SAVE_KEY);
+     if(old&&validSaveData(JSON.parse(old)))localStorage.setItem(BACKUP_SAVE_KEY,old);
+     localStorage.removeItem(SAVE_KEY);
+     localStorage.removeItem(LEGACY_PLANET_KEY);
+     localStorage.removeItem(LEGACY_GALAXY_KEY);
+     localStorage.removeItem(OLD_SAVE_KEY);
+   }catch(e){/* Do not crash if browser storage is unavailable. */}
+   saveLocked=false;lastBackupAt=Date.now();acc=0;reset();
+   E('saveState').textContent=saveWorld(true)?'🌱 สร้างและบันทึกโลกใหม่แล้ว':'⚠️ สร้างโลกใหม่ แต่ยังบันทึกไม่ได้ · โปรดส่งออกไฟล์';
+ });
+ // Boot always looks for an existing planet regardless of the incoming URL.
+ // Crucially, never call reset()+autosave over an unreadable/corrupt save.
+ function loadSavedWorld(){
+   const keys=[SAVE_KEY,BACKUP_SAVE_KEY,LEGACY_PLANET_KEY,LEGACY_GALAXY_KEY,OLD_SAVE_KEY];
+   let found=false,error=null;
+   for(const key of keys){
+     let raw;
+     try{raw=localStorage.getItem(key);}catch(e){return {loaded:false,found:true,error:e};}
+     if(!raw)continue;
+     found=true;
+     try{
+       const candidate=JSON.parse(raw);
+       if(!validSaveData(candidate))continue;
+       importWorld(candidate);
+       return {loaded:true,found:true,key};
+     }catch(e){error=e;}
+   }
+   return {loaded:false,found,error};
+ }
+ // Direct play.html, refresh, and ?continue=1 now behave identically.
+ const loadedWorld=loadSavedWorld();
+ if(loadedWorld.loaded){
+   saveLocked=false;
+   E('saveState').textContent=(loadedWorld.key===SAVE_KEY?
+     '✅ กลับเข้าโลกเดิมอัตโนมัติ':'🛟 โหลดเซฟสำรอง/เซฟเก่าอัตโนมัติ')+
+     ' · ปีดาว '+state.year+' · ประชากร '+state.demography.population.toLocaleString('en-US');
+   // Migrate or repair the primary slot immediately without deleting backups.
+   if(loadedWorld.key!==SAVE_KEY){lastBackupAt=Date.now();saveWorld(true);}
+ }else if(loadedWorld.found){
+   saveLocked=true;reset();state.pause=true;
+   E('saveState').textContent='⚠️ พบข้อมูลเซฟ แต่ยังอ่านไม่ได้ · ระบบป้องกันการบันทึกทับไว้แล้ว '+
+      'ให้กดกู้เซฟสำรอง หรือนำเข้าไฟล์ JSON ห้ามกดโลกใหม่ถ้ายังต้องการกู้ข้อมูล';
+ }else{
+   saveLocked=false;reset();
+   E('saveState').textContent=saveWorld(true)?
+     '🌱 เริ่มโลกใหม่ครั้งแรกและบันทึกแล้ว · Refresh จะกลับมาโลกนี้':
+     '⚠️ เครื่องนี้ไม่ยอมให้บันทึก · โปรดใช้ส่งออกไฟล์ JSON';
+ }
+ window.addEventListener('pagehide',()=>{if(!saveLocked)saveWorld(true);});
+ document.addEventListener('visibilitychange',()=>{
+   if(document.visibilityState==='hidden'&&!saveLocked)saveWorld(true);
+ });
  requestAnimationFrame(animate);
 })();
 </script>
