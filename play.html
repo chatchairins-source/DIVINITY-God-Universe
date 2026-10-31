@@ -1856,12 +1856,125 @@
      ctx.fillStyle=color;ctx.beginPath();ctx.arc(sx+16+dx,sy+12+dy,r*s,0,Math.PI*2);ctx.fill();
    }
  }
- function drawHouse(x,y){const sx=x*TILE+3,sy=y*TILE+2;
-   ctx.fillStyle='#152e2b7f';ctx.beginPath();ctx.ellipse(sx+15,sy+28,16,6,0,0,Math.PI*2);ctx.fill();
-   rounded(sx+3,sy+12,25,18,2,'#d4bb8d');rounded(sx+13,sy+18,7,12,1,'#634b38');
-   ctx.fillStyle='#ab6446';ctx.beginPath();ctx.moveTo(sx,sy+14);ctx.lineTo(sx+15,sy+1);ctx.lineTo(sx+31,sy+14);ctx.closePath();ctx.fill();
-   ctx.strokeStyle='#d59761';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx+2,sy+13);ctx.lineTo(sx+15,sy+3);ctx.lineTo(sx+29,sy+13);ctx.stroke();
+
+ // Architecture is derived from civilization progress, never a fixed sprite.
+ // Keep house locations from saved worlds and change their appearance in place.
+ function drawHouse(x,y){
+   const era=visibleCivilizationEra(),v=Math.abs((x*17+y*11)%7),sx=x*TILE+2,sy=y*TILE+2;
+   ctx.fillStyle='#07192277';ctx.beginPath();ctx.ellipse(sx+17,sy+28,15,5,0,0,Math.PI*2);ctx.fill();
+   if(era<=1){
+     // Wattle huts, thatch and early timber homes.
+     rounded(sx+3,sy+14,26,16,2,era?'#b48a55':'#bdaa8b');
+     ctx.fillStyle=era?'#765435':'#806d49';
+     ctx.beginPath();ctx.moveTo(sx,sy+15);ctx.lineTo(sx+16,sy+(era?3:6));ctx.lineTo(sx+31,sy+15);ctx.closePath();ctx.fill();
+     rounded(sx+14,sy+21,6,9,1,'#5a4534');
+     if(era>=1){ctx.strokeStyle='#e9bd7b';ctx.lineWidth=1;ctx.strokeRect(sx+6,sy+19,6,6)}
+   }else if(era===2||era===3){
+     // Brick towns, civic halls, and stone-walled kingdoms.
+     const base=era===2?'#bf9d76':'#a3a7a5',height=era===2?22:26;
+     rounded(sx+2,sy+30-height,28,height,1,base);
+     ctx.fillStyle=era===2?'#975943':'#637077';
+     ctx.beginPath();ctx.moveTo(sx+1,sy+30-height);ctx.lineTo(sx+16,sy+3);
+     ctx.lineTo(sx+31,sy+30-height);ctx.closePath();ctx.fill();
+     rounded(sx+13,sy+20,8,10,1,'#584a3c');
+     for(let j=0;j<2;j++)rounded(sx+4+j*17,sy+15,6,6,1,'#5a7984');
+     if(era===3&&v%3===0){
+       rounded(sx+3,sy+2,5,13,1,'#c3c0b4');rounded(sx+25,sy+2,5,13,1,'#c3c0b4');
+     }
+   }else if(era===4){
+     // Age of trade: plaster houses, tiled roofs and shopfronts.
+     rounded(sx+2,sy+8,28,22,2,v%2?'#e3c49d':'#d4b7a5');
+     ctx.fillStyle='#aa6749';ctx.fillRect(sx+1,sy+6,30,5);
+     for(let j=0;j<2;j++){rounded(sx+5+j*15,sy+13,8,7,1,'#789da3');rounded(sx+5+j*15,sy+23,8,5,1,'#916b51')}
+   }else if(era===5){
+     // Early industrial cities contain row houses and occasional workshops.
+     if(v<2){
+       rounded(sx+1,sy+10,30,20,1,'#b47962');
+       rounded(sx+22,sy-8,6,21,1,'#6f5e56');
+       ctx.fillStyle='#3e515a';ctx.fillRect(sx+2,sy+7,27,5);
+     }else{
+       rounded(sx+2,sy+8,28,22,1,'#a86f5b');
+       for(let j=0;j<3;j++){rounded(sx+4+j*9,sy+13,6,6,1,'#edc67e');rounded(sx+4+j*9,sy+23,6,5,1,'#566d6c')}
+     }
+   }else if(era===6){
+     // Modern mid-rise apartment buildings.
+     const h=34+v*2;rounded(sx+3,sy+30-h,25,h,2,v%2?'#c4d1c9':'#a0aeba');
+     for(let row=0;row<4;row++)for(let col=0;col<3;col++)
+       rounded(sx+5+col*7,sy+30-h+5+row*8,5,5,1,row%2?'#548ca5':'#e3cf93');
+   }else if(era===7){
+     // Information-age skyline with glass towers and illuminated windows.
+     const h=42+v*3;rounded(sx+4,sy+30-h,24,h,3,v%2?'#5b87a3':'#4a7183');
+     ctx.fillStyle='#98d3dc';ctx.fillRect(sx+6,sy+30-h,20,3);
+     for(let row=0;row<5;row++)for(let col=0;col<3;col++)
+       rounded(sx+6+col*6,sy+30-h+6+row*8,4,5,1,(row+col)%3===0?'#f2d795':'#80c4d0');
+   }else{
+     // Spacefaring arcologies, habitat domes and solar towers.
+     const h=40+v*3;rounded(sx+8,sy+30-h,18,h,8,'#8bafc0');
+     rounded(sx+11,sy+30-h+4,12,h-9,6,'#356780');
+     ctx.strokeStyle='#75e0d7';ctx.lineWidth=2;ctx.beginPath();
+     ctx.arc(sx+17,sy+30-h+8,8,Math.PI,Math.PI*2);ctx.stroke();
+     for(let row=0;row<4;row++)rounded(sx+12,sy+30-h+14+row*8,10,2,1,'#b1f3e5');
+     ctx.fillStyle='#eccd8a';ctx.beginPath();ctx.arc(sx+17,sy+30-h-2,3,0,Math.PI*2);ctx.fill();
+   }
  }
+ function drawRoadNetwork(){
+   const era=visibleCivilizationEra();if(era<2)return;
+   ctx.save();
+   ctx.lineCap='round';ctx.lineJoin='round';
+   for(const h of houses){
+     const closest=(state.settlements||[]).reduce((a,q)=>dist(q.x,q.y,h.x,h.y)<dist(a.x,a.y,h.x,h.y)?q:a,
+       state.settlements?.[0]||{x:16,y:10});
+     if(dist(h.x,h.y,closest.x,closest.y)>12)continue;
+     const ax=(h.x+.5)*TILE,ay=(h.y+.8)*TILE,bx=(closest.x+.5)*TILE,by=(closest.y+.5)*TILE;
+     ctx.strokeStyle=era>=5?'#52616a':era>=3?'#a69883':'#987f61';
+     ctx.lineWidth=era>=5?9:6;
+     ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax,by);ctx.lineTo(bx,by);ctx.stroke();
+     if(era>=6){ctx.strokeStyle='#d7d9c699';ctx.lineWidth=1.3;ctx.setLineDash([6,9]);
+       ctx.stroke();ctx.setLineDash([]);}
+   }
+   ctx.restore();
+ }
+ function drawCivilizationLandmarks(ts){
+   const era=visibleCivilizationEra();if(era<2)return;
+   for(const site of state.settlements||[]){
+     const sx=(site.x+.5)*TILE,sy=(site.y+.5)*TILE;
+     if(site.x<camera.x-4||site.x>camera.x+visibleWidth()+4||
+       site.y<camera.y-4||site.y>camera.y+visibleHeight()+4)continue;
+     ctx.save();
+     ctx.fillStyle=era>=6?'#537680':era>=4?'#9a855e':'#8c7758';
+     ctx.beginPath();ctx.arc(sx,sy,14,0,Math.PI*2);ctx.fill();
+     if(era<=4){
+       rounded(sx-8,sy-16,16,26,2,era>=4?'#e2ccb1':'#b5a183');
+       ctx.fillStyle='#79513b';ctx.beginPath();ctx.moveTo(sx-11,sy-16);ctx.lineTo(sx,sy-28);ctx.lineTo(sx+11,sy-16);ctx.fill();
+       ctx.fillStyle='#e8cf83';ctx.fillRect(sx-1,sy-29,2,8);
+     }else if(era<=6){
+       rounded(sx-12,sy-26,24,35,2,era===5?'#856b62':'#9fabb2');
+       for(let j=0;j<3;j++){ctx.fillStyle='#ffd58b';ctx.fillRect(sx-9+j*8,sy-16,5,8)}
+       rounded(sx+10,sy-38,6,39,1,'#52646d');
+       ctx.fillStyle='#d9e4e2';ctx.beginPath();ctx.arc(sx+13,sy-40,4+2*Math.sin(ts*.002),0,Math.PI*2);ctx.fill();
+     }else{
+       rounded(sx-10,sy-42,20,51,5,era===8?'#5c8799':'#4b7188');
+       rounded(sx-7,sy-38,14,45,4,'#91d4cf');
+       ctx.strokeStyle='#e3d7ad';ctx.lineWidth=3;ctx.beginPath();ctx.arc(sx,sy-40,15,Math.PI,0);ctx.stroke();
+       if(era>=8){ctx.fillStyle='#f6e7b7';ctx.beginPath();ctx.arc(sx,sy-55,3,0,Math.PI*2);ctx.fill();}
+     }
+     ctx.restore();
+   }
+   if(state.cosmos?.shipyard||spaceReady()){
+     const sx=19*TILE,sy=7*TILE;ctx.save();
+     rounded(sx-20,sy+5,40,8,3,'#526f77');
+     rounded(sx-3,sy-42,6,48,3,'#dce1de');
+     ctx.fillStyle='#f3b568';ctx.beginPath();ctx.moveTo(sx-4,sy-39);ctx.lineTo(sx,sy-50);
+     ctx.lineTo(sx+4,sy-39);ctx.fill();
+     ctx.fillStyle='#50c5c9';ctx.fillRect(sx-3,sy-31,6,10);
+     if(state.cosmos.shipyard){
+       ctx.strokeStyle='#a5c0cc';ctx.lineWidth=3;ctx.beginPath();
+       ctx.moveTo(sx-17,sy+5);ctx.lineTo(sx-17,sy-40);ctx.lineTo(sx-6,sy-40);ctx.stroke();
+     }
+     ctx.restore();
+   }
+ }
+
  function drawPerson(p){const sx=p.x*TILE,sy=p.y*TILE;
    if(p.fate==='favorite'||p.fate==='disfavored'){
      const good=p.fate==='favorite';
@@ -1873,10 +1986,24 @@
      ctx.beginPath();ctx.arc(sx,sy,15,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
    }
    ctx.fillStyle='#0e242a82';ctx.beginPath();ctx.ellipse(sx,sy+7,5.5,2.2,0,0,Math.PI*2);ctx.fill();
-   const robes=['#efe0af','#b8dce0','#e3b9a9','#c2d5a8','#dac2e7'];
-   ctx.fillStyle=robes[p.dress];ctx.beginPath();ctx.moveTo(sx-4,sy+4);ctx.lineTo(sx+4,sy+4);ctx.lineTo(sx+5,sy-3);ctx.lineTo(sx-5,sy-3);ctx.closePath();ctx.fill();
+   const era=visibleCivilizationEra();
+   const clothes=era>=8?['#e1f0fa','#71b2c8','#a7d7d8','#f2d58c','#8ba6d5']:
+     era>=6?['#657b9b','#5a7b85','#8f6266','#557364','#826b98']:
+     era>=4?['#d9c6a8','#bfcdd1','#a98976','#8d9c81','#9c91ac']:
+       ['#efe0af','#b8dce0','#e3b9a9','#c2d5a8','#dac2e7'];
+   ctx.fillStyle=clothes[p.dress%clothes.length];ctx.beginPath();ctx.moveTo(sx-4,sy+4);
+   ctx.lineTo(sx+4,sy+4);ctx.lineTo(sx+5,sy-3);ctx.lineTo(sx-5,sy-3);ctx.closePath();ctx.fill();
    ctx.fillStyle='#e2ac81';ctx.beginPath();ctx.arc(sx,sy-6,4.1,0,Math.PI*2);ctx.fill();
-   ctx.fillStyle='#47372d';ctx.beginPath();ctx.arc(sx,sy-8,3.9,Math.PI,Math.PI*2);ctx.fill();
+   if(era>=8){
+     ctx.fillStyle='#d6f8f2';ctx.beginPath();ctx.arc(sx,sy-7,5.2,Math.PI,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#447895';ctx.fillRect(sx-4,sy-8,8,2);
+   }else if(era>=6){
+     ctx.fillStyle='#353e4d';ctx.fillRect(sx-5,sy-10,10,2);
+     ctx.fillStyle='#31373d';ctx.beginPath();ctx.arc(sx,sy-9,3.5,Math.PI,Math.PI*2);ctx.fill();
+   }else{
+     ctx.fillStyle='#47372d';ctx.beginPath();ctx.arc(sx,sy-8,3.9,Math.PI,Math.PI*2);ctx.fill();
+     if(era>=3){ctx.fillStyle=clothes[p.dress%clothes.length];ctx.fillRect(sx-5,sy-11,10,2)}
+   }
    if(p.fate!=='neutral'){
      ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
      ctx.shadowColor=p.fate==='favorite'?'#f9da89':'#f092a1';ctx.shadowBlur=8;
@@ -1912,13 +2039,17 @@
      if(camera.zoom<.48){ctx.fillStyle='#286d49';ctx.fillRect(x*TILE+7,y*TILE+7,17,17);}
      else drawTree(x,y,t.seed);
    }
-   // Settlement fire and communal focal point.
+   drawRoadNetwork();
+   // Settlement fire is replaced by civic architecture in the later eras.
    const cx=16.5*TILE,cy=10.5*TILE;
-   ctx.fillStyle='#7b9b6290';ctx.beginPath();ctx.ellipse(cx,cy,72,40,0,0,Math.PI*2);ctx.fill();
-   ctx.fillStyle='#84664a';ctx.beginPath();ctx.ellipse(cx,cy,14,9,0,0,Math.PI*2);ctx.fill();
-   ctx.fillStyle='#f7a14b';ctx.beginPath();ctx.arc(cx,cy-3+Math.sin(ts*.007)*1.5,6,0,Math.PI*2);ctx.fill();
-   ctx.fillStyle='#ffda8d';ctx.beginPath();ctx.arc(cx,cy-5,3.5,0,Math.PI*2);ctx.fill();
+   if(visibleCivilizationEra()<3){
+     ctx.fillStyle='#7b9b6290';ctx.beginPath();ctx.ellipse(cx,cy,72,40,0,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#84664a';ctx.beginPath();ctx.ellipse(cx,cy,14,9,0,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#f7a14b';ctx.beginPath();ctx.arc(cx,cy-3+Math.sin(ts*.007)*1.5,6,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#ffda8d';ctx.beginPath();ctx.arc(cx,cy-5,3.5,0,Math.PI*2);ctx.fill();
+   }
    for(const h of houses)if(h.x>=x0-2&&h.x<x1+2&&h.y>=y0-2&&h.y<y1+2)drawHouse(h.x,h.y);
+   drawCivilizationLandmarks(ts);
    for(const p of people)if(p.x>=x0-1&&p.x<x1+1&&p.y>=y0-1&&p.y<y1+1)drawPerson(p);
    // Heatwaves, rainy weather and pollution change atmospheric appearance.
    if(state.w.weather==='คลื่นความร้อน'||state.w.weather==='ภัยแล้ง'){ctx.fillStyle='rgba(240,158,72,.11)';ctx.fillRect(camera.x*TILE,camera.y*TILE,C.width/camera.zoom,C.height/camera.zoom)}
