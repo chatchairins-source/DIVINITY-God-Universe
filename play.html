@@ -2308,8 +2308,12 @@
  E('save').addEventListener('click',()=>saveWorld());
  E('load').addEventListener('click',()=>{
    const found=loadSavedWorld();
-   if(found.loaded){saveLocked=false;saveWorld(true);E('saveState').textContent='✅ โหลดโลกเดิมแล้ว · ปีดาว '+state.year;}
-   else E('saveState').textContent=found.found?'⚠️ เซฟหลักใช้ไม่ได้ · ลองกู้เซฟสำรองหรือไฟล์ JSON':'ยังไม่พบเซฟในเบราว์เซอร์นี้';
+   if(found.loaded){
+     saveLocked=false;
+     const saved=saveWorld(true);
+     E('saveState').textContent=saved?'✅ โหลดโลกเดิมแล้ว · ปีดาว '+state.year:
+       '⚠️ โหลดโลกเดิมแล้ว แต่บันทึกไม่ได้ · โปรดส่งออกไฟล์ JSON';
+   }else E('saveState').textContent=found.found?'⚠️ เซฟหลักใช้ไม่ได้ · ลองกู้เซฟสำรองหรือไฟล์ JSON':'ยังไม่พบเซฟในเบราว์เซอร์นี้';
  });
  E('restoreBackup').addEventListener('click',()=>{
    try{
@@ -2330,7 +2334,19 @@
     const blob=new Blob([JSON.stringify(data)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download='divinity-world-year-'+state.year+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);E('saveState').textContent='✅ ส่งออกข้อมูลโลกเป็น JSON แล้ว'});
  E('importBtn').addEventListener('click',()=>E('importFile').click());
- E('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());importWorld(data);saveWorld(true);E('saveState').textContent='✅ นำเข้าโลกและบันทึกแล้ว'}catch(err){E('saveState').textContent='⚠️ นำเข้าไม่ได้: '+err.message}e.target.value=''});
+ E('importFile').addEventListener('change',async e=>{
+   const file=e.target.files?.[0];if(!file)return;
+   try{
+     const data=JSON.parse(await file.text());
+     if(!validSaveData(data))throw new Error('ไฟล์ JSON ไม่ใช่เซฟ DIVINITY ที่รองรับ');
+     importWorld(data);saveLocked=false;
+     const saved=saveWorld(true);
+     E('saveState').textContent=saved?
+       '✅ นำเข้าโลกและบันทึกสำเร็จ · ปีดาว '+state.year:
+       '⚠️ นำเข้าโลกได้ แต่บันทึกไม่ได้ · โปรดส่งออกไฟล์เพื่อเก็บข้อมูล';
+   }catch(err){E('saveState').textContent='⚠️ นำเข้าไม่ได้: '+err.message}
+   e.target.value='';
+ });
  E('goHome').addEventListener('click',()=>saveWorld(true));
  E('reset').addEventListener('click',()=>{
    if(!confirm('ยืนยันสร้างโลกใหม่? เซฟหลักจะถูกแทนที่ แต่ระบบจะเก็บเซฟก่อนหน้าไว้ในช่องกู้เซฟสำรองหากมีพื้นที่เพียงพอ'))return;
