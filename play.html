@@ -763,8 +763,7 @@
  function ensureWorldGrowth(silent=false){
    const desired=targetMapTier(Math.max(people.length,Math.min(state.demography?.population||0,210)));
    if(growTerrain(desired[1],desired[2])){
-     if(!silent)pushLog('🗺️ อาณาเขตใหม่เปิดให้สำรวจ '+W+'×'+H+' ช่อง โดยเก็บชุมชนและสิ่งปลูกสร้างเดิมทั้งหมด');
-     saveWorld(true);
+     if(!silent){pushLog('🗺️ อาณาเขตใหม่เปิดให้สำรวจ '+W+'×'+H+' ช่อง โดยเก็บชุมชนและสิ่งปลูกสร้างเดิมทั้งหมด');saveWorld(true)}
    }
  }
 
@@ -1436,10 +1435,9 @@
      throw new Error('ไฟล์โลกมีขนาดไม่ถูกต้องหรือข้อมูลไม่ครบ')}
    state=data.state;state.bulk=false;state.pause=true;state.speed=1;ensureCosmos();ensureEconomy();ensureStore();ensureHistory();
    people=data.people;tiles=data.tiles;H=tiles.length;W=tiles[0].length;houses=data.houses;
-   ensureSettlements();ensureWorldGrowth(true);camera.zoom=.72;focusMap(16,10);nextPersonId=data.nextPersonId||Math.max(0,...people.map(p=>p.id))+1;
+   ensureSettlements();ensureDemography();ensureWorldGrowth(true);camera.zoom=.72;focusMap(16,10);nextPersonId=data.nextPersonId||Math.max(0,...people.map(p=>p.id))+1;
    selectedPersonId=data.selectedPersonId||null;logs=(data.logs||[]).slice(0,8);effects=[];acc=0;hover=null;last=0;
    if(!chosenPerson())selectedPersonId=null;
-   ensureDemography();
    // Old saves had no district field; continue playing without resetting citizens.
    for(const p of people)if(!Number.isInteger(p.district)||p.district>=state.settlements.length)p.district=0;
    E('log').innerHTML=logs.map(x=>`<div class="entry"><b>วัน ${x.day}</b> · ${safeName(x.message)}</div>`).join('');
@@ -1738,10 +1736,11 @@
        state.food=clamp(state.food+8,0,9999);
        pushLog('ผู้คนรู้สึกได้รับพร ความสุขของชุมชนเพิ่มขึ้น');break;
      }
-     case 'human':spawn(x,y);pushLog('คุณสร้างมนุษย์คนใหม่ขึ้นบนผืนโลก');break;
+     case 'human':spawn(x,y);if(state.demography?.macro){state.demography.population=Math.min(MAX_PLANET_POP,state.demography.population+1);distributePopulation()}pushLog('คุณสร้างมนุษย์คนใหม่ขึ้นบนผืนโลก');break;
      case 'lightning':{
        let hit=0;
-       for(let i=people.length-1;i>=0;i--)if(dist(people[i].x,people[i].y,x,y)<1.15){if(people[i].id===selectedPersonId)selectedPersonId=null;people.splice(i,1);hit++}
+       for(let i=people.length-1;i>=0;i--)if(dist(people[i].x,people[i].y,x,y)<1.15){cleanDeath(people[i],'lightning');hit++}
+       if(hit&&state.demography?.macro){state.demography.population=Math.max(0,state.demography.population-hit);distributePopulation()}
        for(let yy=ty-1;yy<=ty+1;yy++)for(let xx=tx-1;xx<=tx+1;xx++){const q=tileAt(xx,yy);if(q&&dist(xx+.5,yy+.5,x,y)<1.7)q.tree=false}
        state.happiness=clamp(state.happiness-12-(hit?8:0),0,100);
        state.w.conflict=clamp(state.w.conflict+4,0,100);state.w.trust=clamp(state.w.trust-6,0,100);pushLog(hit?`ฟ้าผ่าคร่าชีวิต ${hit} คน ผู้คนหวาดกลัวพระเจ้า`:'สายฟ้าฟาดลงพื้น ผู้คนเริ่มหวาดกลัว');break;
