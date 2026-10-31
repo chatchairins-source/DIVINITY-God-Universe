@@ -1171,11 +1171,13 @@
    if(pop>50)w.education=clamp(w.education+.011+libraries*.004,0,100);
    if(pop>25)w.infrastructure=clamp(w.infrastructure+.004+Math.min(1,Math.log10(pop+1)/6)*.004,0,100);
    // Economic output for aggregate regions: local markets still have costs.
-   if(pop>=1000&&w.technology>=28){
-     const industry=clamp(Math.log10(pop)/5,.4,1.8);
-     state.money=clamp(state.money+.18*industry,0,99999);
-     state.ore=clamp(state.ore+.065*industry,0,9999);
-     state.wood=clamp(state.wood+.052*industry,0,9999);
+   if(pop>=25&&w.technology>=30){
+     // Regional industry begins with towns; it must not depend on animating
+     // every miner during a century skip. Supply is gradual, not infinite.
+     const industry=clamp(Math.log10(pop+1)/4,.35,1.8);
+     state.money=clamp(state.money+.16*industry,0,99999);
+     state.ore=clamp(state.ore+.052*industry,0,9999);
+     state.wood=clamp(state.wood+.045*industry,0,9999);
    }
    if(w.technology>=65&&w.education>=45&&w.infrastructure>=25){
      const gain=(.07+labs*.06+Math.max(0,w.technology-65)*.0038)*hardship*peace;
@@ -1201,7 +1203,7 @@
  }
  function visibleCivilizationEra(){
    const t=state.w.technology;
-   const techTier=t>=86?8:t>=76?7:t>=57?6:t>=42?5:t>=30?4:t>=20?3:t>=11?2:t>=6?1:0;
+   const techTier=t>=86&&spaceReady()?8:t>=76?7:t>=57?6:t>=42?5:t>=30?4:t>=20?3:t>=11?2:t>=6?1:0;
    return Math.max(techTier,state.history?.era||0);
  }
  function updateCivilizationUI(){
@@ -1960,7 +1962,7 @@
      }
      ctx.restore();
    }
-   if(state.cosmos?.shipyard||spaceReady()){
+   if(state.cosmos?.shipyard){
      const sx=19*TILE,sy=7*TILE;ctx.save();
      rounded(sx-20,sy+5,40,8,3,'#526f77');
      rounded(sx-3,sy-42,6,48,3,'#dce1de');
