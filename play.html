@@ -236,18 +236,45 @@
   .map-help{font-size:11px;padding:8px 12px;background:#14282b;color:#adccc2}
   .stage-wrap canvas{touch-action:none;cursor:grab}.stage-wrap canvas:active{cursor:grabbing}
   @media(max-width:600px){.map-tools{gap:6px;padding:8px}.map-tools button{min-height:46px;min-width:48px;padding:9px 10px}.map-status{font-size:10px}.settlement-jumps{padding:0 8px 8px}}
+
+  /* DIVINITY planetary creator mode: the globe is the whole main game view.
+     The old local simulation stays in save format but its sprites are hidden. */
+  body.planet-mode .layout{grid-template-columns:minmax(0,1fr) minmax(280px,345px)}
+  body.planet-mode #world{display:none}
+  body.planet-mode #planetOverview{display:block;width:100%;height:auto;aspect-ratio:16/10;max-height:620px;touch-action:manipulation}
+  #planetOverview{display:none}
+  body.planet-mode .world-label{display:none}
+  body.planet-mode .map-tools,body.planet-mode .settlement-jumps,body.planet-mode .map-help,
+  body.planet-mode .stage-card>.hint,body.planet-mode #peopleSection,
+  body.planet-mode .systems,body.planet-mode #godPowers,body.planet-mode #planetShop{display:none}
+  body.planet-mode .game-topbar a[href="#peopleSection"],body.planet-mode .game-topbar a[href="#godPowers"],
+  body.planet-mode .game-topbar a[href="#planetShop"]{display:none}
+  .planet-observer{padding:14px;background:linear-gradient(135deg,#13252b,#19312d);border-top:1px solid #416155}
+  .planet-observer .planet-line{font-size:13px;color:#f7dfa6;font-weight:850;line-height:1.5}
+  .planet-observer .planet-explainer{font-size:11px;color:#b9d4cd;line-height:1.65;margin:6px 0 10px}
+  .planet-commands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .planet-commands button{font-size:12px;line-height:1.35;min-height:64px;padding:9px 6px;border:1px solid #598474;
+    border-radius:12px;background:#284940;color:#f0f9f1;font-weight:780;touch-action:manipulation}
+  .planet-commands button:active{transform:scale(.96);background:#487259}
+  .planet-commands button:focus-visible{outline:2px solid #efc881;outline-offset:3px}
+  .planet-command-feedback{font-size:12px;line-height:1.6;background:#0e2124;border:1px solid #42645d;
+    min-height:40px;margin-top:9px;border-radius:10px;padding:10px;color:#d6edd8}
+  .planet-command-note{font-size:10px;color:#a7bfb6;margin-top:8px;line-height:1.7}
+  .planet-hero-inset{position:relative}
+  @media(max-width:850px){body.planet-mode .layout{grid-template-columns:1fr}body.planet-mode .panel{order:2}}
+  @media(max-width:400px){.planet-commands{gap:6px}.planet-commands button{font-size:11px;min-height:61px}}
   .game-topbar{position:sticky;top:0;z-index:30;background:#0b171ce8;border-bottom:1px solid #405551;backdrop-filter:blur(16px);min-height:53px;display:flex;align-items:center;gap:9px;padding:7px max(12px,calc((100vw - 1500px)/2));overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:none}
   .game-topbar::-webkit-scrollbar{display:none}.game-topbar a{flex:0 0 auto;color:#dcece6;text-decoration:none;border:1px solid #3b524d;border-radius:9px;padding:7px 11px;font-size:12px;font-weight:650;white-space:nowrap}.game-topbar a:hover,.game-topbar a:focus-visible{border-color:#eacb84;background:#243a34;color:#fff4d4}.game-topbar .back-home{color:#f9e4ad;border-color:#9d845d;background:#332e23}.game-topbar .topbar-title{color:#e7c886;font-size:12px;font-weight:800;letter-spacing:1.2px;white-space:nowrap;margin-right:auto}
   .site-game-status{font-size:11px;color:#b4c9c4;margin-left:4px;white-space:nowrap}section[id],#worldMap{scroll-margin-top:72px}
   @media(max-width:640px){.game-topbar{gap:6px;padding:7px 9px}.game-topbar a{padding:8px 9px;font-size:11px}.game-topbar .topbar-title{display:none}.site-game-status{display:none}.app{padding-top:9px}}
 </style>
 </head>
-<body>
+<body class="planet-mode">
 <nav class="game-topbar" aria-label="เมนูเกม">
   <a class="back-home" id="goHome" href="./">← หน้าแรก</a>
   <span class="topbar-title">✦ DIVINITY</span>
-  <a href="#worldMap">🌍 โลก</a>
-  <a href="#planetEconomy">🏗️ ทรัพยากร</a>
+  <a href="#worldMap">🌍 ควบคุมดาว</a>
+  <a href="#planetEconomy">🏗️ โครงการดาว</a>
   <a href="#historySection">📜 ประวัติศาสตร์</a>
   <a href="#godPowers">⚡ พลังพระเจ้า</a>
   <a href="#peopleSection">👥 มนุษย์</a>
@@ -259,18 +286,39 @@
 </nav>
 <main class="app">
   <header>
-    <div class="brand"><div class="logo">✦</div><div><h1>DIVINITY</h1><p>โลกมีชีวิต · เจตจำนงเสรี · หนึ่งผู้เล่นหนึ่งดาว</p></div></div>
+    <div class="brand"><div class="logo">✦</div><div><h1>DIVINITY</h1><p>ควบคุมวิวัฒนาการทั้งดาว · จากชีวิตแรกสู่จักรวาล</p></div></div>
     <span class="tag">เล่นได้บนมือถือและคอมพิวเตอร์ · ไม่ต้องติดตั้ง</span>
   </header>
   <div class="layout">
     <div class="stage-card" id="worldMap">
       <div class="stage-top"><strong>🌍 <span id="stagePlanetName">ดาวรุ่งอรุณ</span><span class="cosmic-timestamp" id="cosmicHeadline">☸️ มหากัปที่ 1 · วิวัฏฏฐายีกัป</span></strong><small id="calendar">วันที่ 1 · ยุคกำเนิด</small></div>
-      <div class="stage-wrap"><canvas id="world" width="1024" height="640" aria-label="แผนที่จำลองโลก คลิกบนแผนที่เพื่อใช้อำนาจของพระเจ้าที่เลือก"></canvas><div class="world-label" id="selectedNote">💧 ฝนแห่งชีวิต · แตะที่แผนที่เพื่อประทานฝน</div></div>
+      <div class="stage-wrap planet-hero-inset">
+        <canvas id="planetOverview" width="960" height="600" role="img" aria-label="ดาวเคราะห์ทั้งดวง มองเห็นมหาสมุทร ทวีป เมฆ และวิวัฒนาการของอารยธรรม"></canvas>
+        <canvas id="world" width="1024" height="640" aria-label="แผนที่ละเอียดภายในดาวสำหรับระบบจำลอง"></canvas>
+        <div class="world-label" id="selectedNote">ควบคุมโลกทั้งใบ</div>
+      </div>
       <div class="city-age-band">
         <div class="age-name" id="cityAgeLabel">🏕️ ยุคชุมชนแรกเริ่ม</div>
         <div class="age-details" id="cityAgeDetails">มนุษย์กำลังเรียนรู้และพัฒนาวิถีชีวิต</div>
         <div class="city-age-bar"><div id="cityAgeBar"></div></div>
         <div class="city-age-space" id="cityAgeSpace">🚀 วิจัยอวกาศยังไม่เริ่มต้น</div>
+      </div>
+      <div class="planet-observer" id="planetCommander">
+        <div class="planet-line" id="planetPulse">🌍 คุณควบคุมทิศทางของทั้งดาว</div>
+        <div class="planet-explainer">ไม่ต้องบังคับมนุษย์ทีละคน · เลือกคำสั่งที่กระทบสิ่งแวดล้อม วิวัฒนาการ เศรษฐกิจ และอารยธรรมทั้งหมด</div>
+        <div class="planet-commands" id="planetCommands">
+          <button type="button" data-world-command="rain">🌧️ เพิ่มน้ำและฝน</button>
+          <button type="button" data-world-command="nature">🌿 ฟื้นธรรมชาติ</button>
+          <button type="button" data-world-command="life">🧬 ส่งเสริมชีวิต</button>
+          <button type="button" data-world-command="climate">🌤️ ปรับภูมิอากาศ</button>
+          <button type="button" data-world-command="economy">🏭 พัฒนาอุตสาหกรรม</button>
+          <button type="button" data-world-command="science">🔬 เร่งวิทยาการ</button>
+          <button type="button" data-world-command="peace">🕊️ สร้างสันติภาพ</button>
+          <button type="button" data-world-command="space">🚀 พัฒนายุคอวกาศ</button>
+          <button type="button" data-world-command="century">☸️ ผ่านไป 100 ปี</button>
+        </div>
+        <div id="planetCommandFeedback" class="planet-command-feedback" role="status" aria-live="polite">เลือกสิ่งที่ต้องการเปลี่ยน แล้วชมผลบนดาวได้ทันที</div>
+        <div class="planet-command-note">คำสั่งระดับดาวไม่มีค่าศรัทธาในโหมดผู้ควบคุมโลก · การเพิ่มอุตสาหกรรมอาจสร้างมลพิษ และวิวัฒนาการจะเดินต่อเองตามสภาพดาว · ดาวอื่นในจักรวาลต้องมาจากผู้เล่นจริงเท่านั้น</div>
       </div>
       <div class="map-tools" aria-label="ควบคุมแผนที่">
         <button type="button" id="mapZoomIn" aria-label="ซูมเข้า">＋</button>
@@ -1669,8 +1717,168 @@
    updateUI();pushLog('📂 โหลดโลกเดิมสำเร็จ · ประชากรและสิ่งปลูกสร้างยังอยู่ครบ');
  }
 
+
+ // The avatar-free God view operates on the same persistent planetary state.
+ // No additional planets or AI-controlled opponent players are generated.
+ const P=document.getElementById('planetOverview'),pctx=P.getContext('2d');
+ let lastPlanetViewFrame=0;
+ function drawPlanetOverview(ts){
+   const c=pctx,w=P.width,h=P.height,world=state.w;
+   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
+   const bg=c.createRadialGradient(w*.5,h*.44,10,w*.5,h*.48,w*.68);
+   bg.addColorStop(0,'#162d47');bg.addColorStop(1,'#050d19');
+   c.fillStyle=bg;c.fillRect(0,0,w,h);
+   for(let i=0;i<125;i++){
+     const x=(i*673+59)%w,y=(i*997+101)%h;
+     c.globalAlpha=.2+(i%7)*.09;
+     c.fillStyle='#d9f1ff';c.beginPath();c.arc(x,y,i%11===0?1.8:.85,0,Math.PI*2);c.fill();
+   }
+   c.globalAlpha=1;
+   const radius=Math.min(h*.405,w*.258),cx=w*.50,cy=h*.50;
+   const aura=c.createRadialGradient(cx,cy,radius*.65,cx,cy,radius*1.33);
+   aura.addColorStop(0,'#61c6e122');aura.addColorStop(.70,'#54c5da21');aura.addColorStop(1,'#54c5da00');
+   c.fillStyle=aura;c.beginPath();c.arc(cx,cy,radius*1.34,0,Math.PI*2);c.fill();
+   c.save();c.beginPath();c.arc(cx,cy,radius,0,Math.PI*2);c.clip();
+   const ocean=c.createLinearGradient(cx-radius,cy-radius,cx+radius,cy+radius);
+   const blue=world.water>25?'#276b95':'#695d43',deep=world.water>25?'#102a52':'#463e37';
+   ocean.addColorStop(0,blue);ocean.addColorStop(1,deep);
+   c.fillStyle=ocean;c.fillRect(cx-radius,cy-radius,radius*2,radius*2);
+   // Continents move slowly in longitude; their color reacts to actual
+   // ecology, climate, industrialization and pollution in the same save.
+   const shift=(ts*.000007+state.day*.00001)%(Math.PI*2);
+   const green=world.forests>=45?'#397958':world.forests>=19?'#817e48':'#aa7951';
+   const darkGreen=world.forests>=45?'#235848':world.forests>=19?'#696a40':'#80533c';
+   const continents=[
+     [-.73,-.35,.52,.54,1.6],[.37,-.53,.33,.39,2.3],
+     [-.12,.50,.54,.39,2.8],[.72,.37,.26,.47,3.7],[-.83,.64,.25,.28,1.9]
+   ];
+   for(let i=0;i<continents.length;i++){
+     const [px,py,rx,ry,seed]=continents[i];
+     const lon=px+Math.sin(shift+i*2.2)*.38;
+     const xx=cx+lon*radius,yy=cy+py*radius;
+     c.save();c.translate(xx,yy);c.rotate(Math.sin(seed+shift)*.25);
+     c.beginPath();
+     for(let j=0;j<=12;j++){
+       const a=Math.PI*2*j/12;
+       const noise=1+.17*Math.sin(j*2.4+seed)+.1*Math.cos(j*4.2+seed);
+       const dx=Math.cos(a)*rx*radius*noise,dy=Math.sin(a)*ry*radius*noise;
+       j===0?c.moveTo(dx,dy):c.lineTo(dx,dy);
+     }
+     c.closePath();c.fillStyle=i%2?green:darkGreen;c.fill();
+     c.restore();
+   }
+   if(world.pollution>32||world.technology>44){
+     const lights=Math.min(95,Math.max(0,Math.floor(world.technology*1.3-22)));
+     for(let i=0;i<lights;i++){
+       const theta=i*2.39996+shift,radial=(.2+(i*37%70)/100)*radius;
+       const x=cx+Math.cos(theta)*radial,y=cy+Math.sin(theta*1.1)*radial*.7;
+       c.globalAlpha=.13+(world.technology/100)*.6;
+       c.fillStyle='#ffeab6';c.fillRect(x,y,2,2);
+     }
+     c.globalAlpha=1;
+   }
+   if(world.pollution>28){
+     c.fillStyle='rgba(91,76,65,'+Math.min(.45,world.pollution/210)+')';
+     c.fillRect(cx-radius,cy-radius,radius*2,radius*2);
+   }
+   const clouds=Math.max(.05,Math.min(.32,world.water/320));
+   c.strokeStyle='rgba(222,248,249,'+clouds+')';
+   c.lineWidth=radius*.07;c.lineCap='round';
+   for(let i=0;i<6;i++){
+     const offset=(ts*.000014+i*.37)%2.5-1.2,y=cy+Math.sin(i*2.5)*radius*.62;
+     c.beginPath();c.ellipse(cx+offset*radius,y,radius*(.22+i%2*.09),radius*.06,.12,0,Math.PI*1.4);c.stroke();
+   }
+   // Simulate the terminator with a transparent night-side gradient.
+   const night=c.createLinearGradient(cx-radius,cy,cx+radius,cy);
+   night.addColorStop(0,'rgba(5,12,29,.02)');night.addColorStop(.47,'rgba(5,12,29,.15)');
+   night.addColorStop(1,'rgba(4,7,20,.83)');
+   c.fillStyle=night;c.fillRect(cx-radius,cy-radius,radius*2,radius*2);
+   const atmosphere=c.createRadialGradient(cx-radius*.3,cy-radius*.48,radius*.06,cx,cy,radius*1.06);
+   atmosphere.addColorStop(0,'rgba(202,241,224,.17)');
+   atmosphere.addColorStop(.76,'rgba(130,207,208,0)');
+   atmosphere.addColorStop(1,'rgba(45,148,223,.36)');
+   c.fillStyle=atmosphere;c.fillRect(cx-radius,cy-radius,radius*2,radius*2);
+   c.restore();
+   c.beginPath();c.arc(cx,cy,radius,0,Math.PI*2);
+   c.strokeStyle='#b6e9e966';c.lineWidth=2;c.stroke();
+   if(state.cosmos?.shipyard||state.cosmos?.cosmicReady){
+     c.save();c.translate(cx,cy);c.rotate(-.28);
+     c.strokeStyle=state.cosmos.shipyard?'#f1d7a5':'#8bc9d4';
+     c.lineWidth=3;c.beginPath();c.ellipse(0,0,radius*1.46,radius*.42,0,0,Math.PI*2);c.stroke();
+     c.fillStyle='#f1dfa6';c.beginPath();c.arc(radius*1.26,-radius*.13,6,0,Math.PI*2);c.fill();
+     c.restore();
+   }
+ }
+ function planetCommanderAction(command){
+   if(centuryTask){E('planetCommandFeedback').textContent='⏳ กำลังข้ามเวลาอยู่ กดยกเลิกหรือรอรอบจำลองเสร็จก่อน';return;}
+   const v=state.w,d=state.demography;
+   let notice='';
+   switch(command){
+     case 'rain':
+       v.water=clamp(v.water+16,0,100);v.soil=clamp(v.soil+6,0,100);
+       addResource('water',35);notice='🌧️ ประทานฝนและเพิ่มแหล่งน้ำให้ทั้งดาว';break;
+     case 'nature':
+       v.forests=clamp(v.forests+15,0,100);v.biodiversity=clamp(v.biodiversity+10,0,100);
+       v.soil=clamp(v.soil+8,0,100);v.pollution=clamp(v.pollution-6,0,100);
+       notice='🌿 ระบบนิเวศฟื้นตัว ป่าขยาย และความหลากหลายเพิ่มขึ้น';break;
+     case 'life':
+       v.biodiversity=clamp(v.biodiversity+8,0,100);v.wildlife=clamp(v.wildlife+12,0,100);
+       if(people.length<POP_CAP){
+         const n=Math.min(4,POP_CAP-people.length);
+         for(let i=0;i<n;i++)spawn(16+rand(-2,2),10+rand(-2,2));
+         if(d.macro)d.population+=n;else{d.population=people.length;distributePopulation();}
+       }
+       notice='🧬 ส่งเสริมกำเนิดและความหลากหลายของชีวิต';break;
+     case 'climate':
+       v.temperature=clamp(v.temperature+(v.temperature>25?-2:2),-30,70);
+       v.pollution=clamp(v.pollution-9,0,100);
+       v.water=clamp(v.water+5,0,100);
+       notice='🌤️ ปรับสมดุลภูมิอากาศและลดมลพิษ';break;
+     case 'economy':
+       v.infrastructure=clamp(v.infrastructure+8,0,100);
+       v.economy=clamp(v.economy+7,0,100);
+       state.money=clamp(state.money+45,0,99999);
+       state.ore=clamp(state.ore+18,0,9999);addResource('energy',30);
+       v.pollution=clamp(v.pollution+3,0,100);
+       notice='🏭 พัฒนาอุตสาหกรรมและระบบพลังงาน แต่มีมลพิษเพิ่มขึ้น';break;
+     case 'science':
+       state.knowledge+=180;v.technology=clamp(v.technology+8,0,100);
+       v.education=clamp(v.education+8,0,100);
+       state.cosmos.research=clamp(state.cosmos.research+(v.technology>=55?8:2),0,100);
+       notice='🔬 อารยธรรมได้รับแรงส่งด้านการศึกษาและวิทยาการ';break;
+     case 'peace':
+       v.conflict=clamp(v.conflict-24,0,100);v.unrest=clamp(v.unrest-20,0,100);
+       v.trust=clamp(v.trust+14,0,100);state.happiness=clamp(state.happiness+7,0,100);
+       if(state.history?.war)endHistoryWar();
+       notice='🕊️ ฟื้นฟูความไว้วางใจและยุติสงครามภายในดาว';break;
+     case 'space':
+       v.technology=clamp(v.technology+9,0,100);
+       v.education=clamp(v.education+6,0,100);
+       state.cosmos.research=clamp(state.cosmos.research+19,0,100);
+       state.ore=clamp(state.ore+12,0,9999);
+       state.money=clamp(state.money+22,0,99999);
+       autonomousSpaceProgram();
+       notice='🚀 ขับเคลื่อนการวิจัยและทรัพยากรสำหรับโครงการอวกาศ';break;
+     case 'century':
+       E('skipCentury').click();
+       E('planetCommandFeedback').textContent='☸️ เริ่มข้ามเวลา 100 ปี · ดูความคืบหน้าที่แผงเวลา';
+       return;
+     default:return;
+   }
+   E('planetCommandFeedback').textContent=notice;
+   pushLog(notice);
+   updateUI();
+   saveWorld(true);
+   drawPlanetOverview(0);
+ }
+ function updatePlanetCommanderUI(){
+   const w=state.w,n=state.demography?.population||people.length;
+   E('planetPulse').textContent='🌍 ประชากร '+Math.floor(n).toLocaleString('en-US')+
+     ' · เทคโนโลยี '+Math.round(w.technology)+'% · น้ำ '+Math.round(w.water)+'% · ป่า '+Math.round(w.forests)+'%';
+ }
  function updateUI(){
    updateDemographyUI();
+   updatePlanetCommanderUI();
    E('food').textContent=Math.floor(state.food);
    E('happiness').innerHTML=`${Math.round(state.happiness)}<span class="unit">%</span>`;
    E('faith').innerHTML=`${Math.floor(state.faith)}<span class="unit">/ ${MAX_FAITH}</span>`;
@@ -2243,7 +2451,9 @@
    // A full 128×80 overview is thousands of tiles; render its static map at
    // 12 FPS on phones while the normal camera remains fluid at full frame rate.
    const overview=camera.zoom<.58;
-   if(!overview||ts-lastOverviewFrame>=82){drawWorld(ts);lastOverviewFrame=ts;}
+   if(document.body.classList.contains('planet-mode')){
+     if(ts-lastPlanetViewFrame>=40){drawPlanetOverview(ts);lastPlanetViewFrame=ts;}
+   }else if(!overview||ts-lastOverviewFrame>=82){drawWorld(ts);lastOverviewFrame=ts;}
    requestAnimationFrame(animate);
  }
  function toWorld(ev){
@@ -2273,6 +2483,10 @@
  C.addEventListener('pointerleave',()=>{if(!mapDrag)hover=null});
  C.addEventListener('wheel',e=>{e.preventDefault();const p=toWorld(e);
    changeMapZoom(camera.zoom*(e.deltaY<0?1.17:1/1.17),p.x,p.y)}, {passive:false});
+ E('planetCommands').addEventListener('click',e=>{
+   const control=e.target.closest('[data-world-command]');
+   if(control)planetCommanderAction(control.dataset.worldCommand);
+ });
  E('mapZoomIn').addEventListener('click',()=>changeMapZoom(camera.zoom*1.35));
  E('mapZoomOut').addEventListener('click',()=>changeMapZoom(camera.zoom/1.35));
  E('mapViewAll').addEventListener('click',overviewMap);
