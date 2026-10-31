@@ -1,0 +1,18 @@
+{
+  "name": "DIVINITY — God Universe",
+  "short_name": "DIVINITY",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#09111b",
+  "theme_color": "#09111b",
+  "description": "เกมสร้างโลกในบทบาทพระเจ้าและกาลจักรแห่งมหากัป",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
