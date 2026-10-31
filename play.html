@@ -1000,9 +1000,12 @@
        const residents=people.filter(p=>p.age>=17&&war.groups.includes(p.group));
        if(residents.length){
          const p=residents[irand(0,residents.length-1)];
-         p.health=clamp(p.health-rand(7,13),0,100);
-         p.stress=clamp((p.stress||10)+5,0,100);
-         if(p.health<=0){h.warDeaths++;cleanDeath(p,'war')}
+         p.stress=clamp((p.stress||10)+9,0,100);
+         // Occasional combat fatalities are possible but not automatic.
+         // Most clashes cause injuries and economic loss instead.
+         if(people.length>9&&Math.random()<.065){h.warDeaths++;cleanDeath(p,'war');}
+         else{p.health=clamp(p.health-rand(10,25),0,100);
+           if(p.health<=0){h.warDeaths++;cleanDeath(p,'war');}}
        }
        historyRecord('war','⚔️ การปะทะทำให้มีผู้บาดเจ็บ เสบียงและการค้าชะงัก');
      }
@@ -1045,6 +1048,34 @@
      if(h.era>=5&&w.pollution>30)events.push(()=>{
        w.pollution=clamp(w.pollution-1.5,0,100);
        historyRecord('event','🌿 ประชาชนเริ่มเรียกร้องมาตรการป้องกันมลพิษ');
+     });
+     if(h.era>=5&&w.inequality>28)events.push(()=>{
+       w.inequality=clamp(w.inequality-2,0,100);w.health=clamp(w.health+.4,0,100);
+       historyRecord('event','👷 คนงานรวมตัวเรียกร้องความปลอดภัย ชั่วโมงทำงานที่เหมาะสม และสวัสดิการ');
+     });
+     if(h.era>=3&&w.trust>50&&state.faith>60)events.push(()=>{
+       state.faith=clamp(state.faith+4,0,MAX_FAITH);state.happiness=clamp(state.happiness+.7,0,100);
+       historyRecord('event','🛕 เกิดศิลปะและประเพณีของชุมชนตามความเชื่อที่หลากหลาย');
+     });
+     if(h.era>=3&&w.economy<24&&w.conflict>48)events.push(()=>{
+       w.infrastructure=clamp(w.infrastructure-1.2,0,100);
+       w.trust=clamp(w.trust-1,0,100);state.money=Math.max(0,state.money-5);
+       historyRecord('event','🏚️ อำนาจชุมชนเสื่อมลงจากวิกฤตเศรษฐกิจและการช่วงชิงอำนาจ');
+     });
+     if(w.water<22&&w.soil<35&&people.length>=7)events.push(()=>{
+       const migrants=people.filter(p=>p.age>=16).slice(0,2);
+       for(const p of migrants){const refuge=findLand(14+rand(-5,7),10+rand(-5,6));
+         p.tx=refuge.x;p.ty=refuge.y;p.stress=clamp((p.stress||10)+2,0,100);}
+       w.unrest=clamp(w.unrest+.5,0,100);
+       historyRecord('event','🧳 ครอบครัวบางส่วนย้ายถิ่นภายในดาวเพื่อหนีภัยแล้งและหาที่ทำกินใหม่');
+     });
+     if(h.era>=4&&w.technology>40&&w.education>33)events.push(()=>{
+       state.knowledge+=6;w.education=clamp(w.education+.4,0,100);
+       historyRecord('event','🔬 นักคิดเผยแพร่วิทยาการและเครื่องมือใหม่ ช่วยพัฒนาสังคม');
+     });
+     if(h.era>=6&&w.unrest>35)events.push(()=>{
+       w.unrest=clamp(w.unrest-2,0,100);w.trust=clamp(w.trust+1,0,100);
+       historyRecord('event','🗳️ ประชาชนเรียกร้องการมีส่วนร่วมและการตรวจสอบผู้มีอำนาจ');
      });
      if(events.length)events[irand(0,events.length-1)]();
    }
