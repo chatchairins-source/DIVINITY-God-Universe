@@ -739,11 +739,46 @@
      saveWorld(true);
    }
  }
+
+ const OUTPOSTS=[
+   {population:25,x:54,y:25,name:'ชุมชนทุ่งตะวันออก'},
+   {population:65,x:78,y:44,name:'เมืองลุ่มน้ำ'},
+   {population:130,x:104,y:59,name:'เมืองที่ราบใต้'},
+   {population:210,x:121,y:72,name:'นครชายขอบ'}
+ ];
+ function maybeFoundSettlement(){
+   // New towns are founded by citizens who already exist on this planet.
+   // No AI-controlled planets, fabricated players or extra human lives.
+   if(state.ticks%4!==0)return;
+   const index=state.settlements.length-1,proposal=OUTPOSTS[index];
+   if(!proposal||people.length<proposal.population||W<=proposal.x||H<=proposal.y)return;
+   const spot=findLand(proposal.x,proposal.y);
+   const tile=tileAt(Math.floor(spot.x),Math.floor(spot.y));
+   if(!tile)return;
+   const id=state.settlements.length;
+   state.settlements.push({id,name:proposal.name,x:Math.floor(spot.x),y:Math.floor(spot.y)});
+   if(tile.type==='land'){tile.tree=false;tile.farm=false;houses.push({x:Math.floor(spot.x),y:Math.floor(spot.y)})}
+   const migrants=people.filter(p=>p.age>=18&&!p.migrateTo&&p.district!==id)
+      .sort((a,b)=>(b.curiosity+b.ambition)-(a.curiosity+a.ambition)).slice(0,Math.min(4,Math.max(2,Math.floor(people.length*.06))));
+   for(const p of migrants){
+     p.district=id;p.migrateTo={x:spot.x,y:spot.y};
+     p.tx=spot.x;p.ty=spot.y;
+     remember(p,'ออกเดินทางไปตั้งชุมชน '+proposal.name);
+   }
+   if(state.history)historyRecord('event','🏘️ ผู้คนเดินทางไปก่อตั้ง'+proposal.name+' และเปิดพื้นที่ตั้งถิ่นฐานแห่งใหม่');
+   else pushLog('🏘️ มีการก่อตั้ง'+proposal.name);
+   refreshMapUI();saveWorld(true);
+ }
+ function homeForPerson(p){
+   const district=Number.isInteger(p.district)?p.district:0;
+   return state.settlements?.[district]||state.settlements?.[0]||{x:16,y:10};
+ }
  function ensureSettlements(){
    const old=Array.isArray(state.settlements)?state.settlements:[];
    state.settlements=old.filter(q=>q&&Number.isFinite(q.x)&&Number.isFinite(q.y)&&q.x>=0&&q.y>=0&&q.x<W&&q.y<H)
      .slice(0,5).map((q,i)=>({id:i,name:String(q.name||('ชุมชน '+(i+1))).slice(0,32),x:q.x,y:q.y}));
    if(!state.settlements.length)state.settlements=[{id:0,name:'ชุมชนแรกเริ่ม',x:16,y:10}];
+   for(const p of people||[])if(!Number.isInteger(p.district)||p.district>=state.settlements.length)p.district=0;
    refreshMapUI();
  }
  function makeMap(){
@@ -776,6 +811,7 @@
    const traits=[p.kindness,p.ambition,p.curiosity,p.autonomy,p.social,p.belief,p.resilience];
    p.trait=character[traits.indexOf(Math.max(...traits))];
    if(newborn){p.action='play';p.thought='ฉันอยากรู้จักโลกใบนี้';p.wealth=0;p.education=0;p.immune=irand(25,65)}
+   p.district=0;
    people.push(p);remember(p,newborn?'เกิดมาในโลกที่ยังต้องเรียนรู้อีกมาก':'เริ่มต้นชีวิตในอาณาจักรแห่งรุ่งอรุณ');return p;
  }
  function remember(p,event){p.memories.unshift(`วัน ${state?.day||1}: ${event}`);p.memories.length=Math.min(3,p.memories.length)}
@@ -1004,7 +1040,7 @@
    if(!q||q.age>=50||Math.random()>.075||people.length>=houses.length*9)return;
    const baby=spawn((p.x+q.x)/2,(p.y+q.y)/2,true);
    if(state.history)state.history.births++;
-   baby.parentIds=[p.id,q.id];baby.group=p.group;p.children.push(baby.id);q.children.push(baby.id);p.lastBaby=state.ticks;q.lastBaby=state.ticks;
+   baby.parentIds=[p.id,q.id];baby.group=p.group;baby.district=p.district||0;p.children.push(baby.id);q.children.push(baby.id);p.lastBaby=state.ticks;q.lastBaby=state.ticks;
    remember(p,`มีลูกชื่อ ${baby.name}`);remember(q,`มีลูกชื่อ ${baby.name}`);pushLog(`👶 ${baby.name} เกิดจากครอบครัวของ ${p.name} และ ${q.name}`);
  }
  function cleanDeath(p,reason='death'){
@@ -1205,6 +1241,8 @@
    ensureSettlements();ensureWorldGrowth(true);camera.zoom=.72;focusMap(16,10);nextPersonId=data.nextPersonId||Math.max(0,...people.map(p=>p.id))+1;
    selectedPersonId=data.selectedPersonId||null;logs=(data.logs||[]).slice(0,8);effects=[];acc=0;hover=null;last=0;
    if(!chosenPerson())selectedPersonId=null;
+   // Old saves had no district field; continue playing without resetting citizens.
+   for(const p of people)if(!Number.isInteger(p.district)||p.district>=state.settlements.length)p.district=0;
    E('log').innerHTML=logs.map(x=>`<div class="entry"><b>วัน ${x.day}</b> · ${safeName(x.message)}</div>`).join('');
    updateUI();pushLog('📂 โหลดโลกสำเร็จ · เวลาหยุดไว้ให้ตรวจสถานะ');
  }
@@ -1351,25 +1389,34 @@
    const chosen=p.action;
    if(chosen==='gather'||chosen==='explore'){
      let tx,ty;for(let j=0;j<12;j++){tx=clamp(p.x+rand(-3.2,3.2),1,W-1);ty=clamp(p.y+rand(-3.2,3.2),1,H-1);if(living(tx,ty)){p.tx=tx;p.ty=ty;break}}
-   }else if(chosen==='farm'||chosen==='build'){const farm=chosen==='farm'?{x:15,y:12}:{x:17,y:10};const pos=findLand(farm.x+rand(-1.5,1.5),farm.y+rand(-1,1));p.tx=pos.x;p.ty=pos.y}
-   else if(chosen==='social'&&friend){p.tx=friend.x;p.ty=friend.y}
+   }else if(chosen==='farm'||chosen==='build'){
+     const home=homeForPerson(p),base=chosen==='farm'?{x:home.x-1,y:home.y+2}:{x:home.x+1,y:home.y};
+     const pos=findLand(base.x+rand(-1.5,1.5),base.y+rand(-1,1));p.tx=pos.x;p.ty=pos.y;
+   }else if(chosen==='social'&&friend){p.tx=friend.x;p.ty=friend.y}
+   if(p.migrateTo){
+     const destination=p.migrateTo;
+     if(dist(p.x,p.y,destination.x,destination.y)<1.5){
+       delete p.migrateTo;
+       remember(p,'ตั้งถิ่นฐานแห่งใหม่สำเร็จ');
+     }else{p.tx=destination.x;p.ty=destination.y;}
+   }
  }
  function maintainHousing(){
    // Residents build new homes as families grow. One home shelters ~6 people
    // comfortably; housing is not locked behind hand-clicking an upgrade.
-   if(state.ticks%24!==0||people.length<houses.length*5.5||houses.length>=35)return;
+   if(state.ticks%24!==0||people.length<houses.length*5.5||houses.length>=65)return;
    const woodCost=5,stoneCost=2;
    if(state.wood<woodCost||state.stone<stoneCost)return;
+   const region=state.settlements[Math.min(state.settlements.length-1,Math.floor(Math.max(0,houses.length-3)/7))];
    const lots=[];
-   for(let y=4;y<H-3;y++)for(let x=9;x<W-3;x++){
-     if(!living(x,y)||dist(x,y,16,10)<2||houses.some(h=>dist(h.x,h.y,x,y)<2.1))continue;
-     const tile=tileAt(x,y);
-     if(tile&&!tile.farm&&!tile.rock)lots.push({x,y});
-   }
+   for(let y=Math.max(2,region.y-8);y<Math.min(H-2,region.y+9);y++)
+     for(let x=Math.max(2,region.x-8);x<Math.min(W-2,region.x+9);x++){
+       if(!living(x,y)||dist(x,y,region.x,region.y)<2||houses.some(h=>dist(h.x,h.y,x,y)<2.1))continue;
+       const tile=tileAt(x,y);if(tile&&!tile.farm&&!tile.rock)lots.push({x,y});
+     }
    if(!lots.length)return;
-   // Keep villages compact; avoid placing houses randomly around the whole map.
-   lots.sort((a,b)=>dist(a.x,a.y,16,10)-dist(b.x,b.y,16,10));
-   const lot=lots[irand(0,Math.min(5,lots.length-1))],tile=tileAt(lot.x,lot.y);
+   lots.sort((a,b)=>dist(a.x,a.y,region.x,region.y)-dist(b.x,b.y,region.x,region.y));
+   const lot=lots[irand(0,Math.min(7,lots.length-1))],tile=tileAt(lot.x,lot.y);
    tile.tree=false;houses.push(lot);state.wood-=woodCost;state.stone-=stoneCost;
    state.w.infrastructure=clamp(state.w.infrastructure+.6,0,100);
    pushLog('🏡 ชุมชนร่วมกันสร้างบ้านหลังใหม่เพื่อรองรับครอบครัวที่เพิ่มขึ้น');
@@ -1379,16 +1426,18 @@
    worldTick();
    economyTick();
    cosmosTick();
-   if(state.ticks%4===0)ensureWorldGrowth();
+   if(state.ticks%4===0){ensureWorldGrowth();maybeFoundSettlement()}
    maintainHousing();
    let trees=0,farms=0,wetFarms=0;
    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x];if(t.tree)trees++;if(t.farm){farms++;if(t.wet>0)wetFarms++}if(t.wet>0)t.wet=Math.max(0,t.wet-.05)}
    // As demand grows, people extend agriculture gradually instead of waiting
    // for a near-empty granary. Natural crops still depend on the climate.
-   const farmTarget=Math.min(62,Math.max(6,Math.ceil(people.length*.55)+3));
-   if(state.ticks%12===0&&farms<farmTarget&&state.wood>=1.2&&(farms<people.length*.45||state.food<Math.max(35,people.length*8))){
+   const farmTarget=Math.min(260,Math.max(6,Math.ceil(people.length*.8)+4));
+   if(state.ticks%12===0&&farms<farmTarget&&state.wood>=1.2&&(farms<people.length*.68||state.food<Math.max(35,people.length*8))){
      const candidates=[];for(let y=3;y<H-2;y++)for(let x=9;x<W-2;x++){
-       const t=tileAt(x,y);if(t?.type==='land'&&!t.farm&&!t.tree&&!houses.some(h=>h.x===x&&h.y===y))candidates.push(t);
+       const t=tileAt(x,y);
+       if(t?.type==='land'&&!t.farm&&!t.tree&&!houses.some(h=>h.x===x&&h.y===y)&&
+         state.settlements.some(v=>dist(x,y,v.x,v.y)<11))candidates.push(t);
      }
      if(candidates.length){const t=candidates[irand(0,candidates.length-1)];t.farm=true;state.wood-=1.2;farms++;if(state.ticks%48===0)pushLog('🌾 ชุมชนขยายพื้นที่เกษตรเพื่อรองรับความต้องการอาหาร')}
    }
@@ -1618,7 +1667,7 @@
    if(hover){const x=Math.floor(hover.x),y=Math.floor(hover.y);ctx.strokeStyle='#ffe7ae';ctx.lineWidth=2;ctx.strokeRect(x*TILE+1,y*TILE+1,TILE-2,TILE-2)}
    ctx.restore();
  }
- function stepMove(dt){if(state.pause)return;for(const p of people){const d=dist(p.x,p.y,p.tx,p.ty);if(d>.02){const modifier=p.fate==='favorite'?1.22:p.fate==='disfavored'?.78:1;const move=Math.min(d,p.speed*modifier*dt/1000);p.x+=(p.tx-p.x)/d*move;p.y+=(p.ty-p.y)/d*move}}}
+ function stepMove(dt){if(state.pause)return;for(const p of people){const d=dist(p.x,p.y,p.tx,p.ty);if(d>.02){const modifier=(p.fate==='favorite'?1.22:p.fate==='disfavored'?.78:1)*(p.migrateTo?4:1);const move=Math.min(d,p.speed*modifier*dt/1000);p.x+=(p.tx-p.x)/d*move;p.y+=(p.ty-p.y)/d*move}}}
  function animate(ts){if(!last)last=ts;const delta=Math.min(ts-last,100);last=ts;
    if(!state.pause){acc+=delta*state.speed;while(acc>=1000){acc-=1000;tick()}}
    stepMove(delta*state.speed);
