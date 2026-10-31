@@ -1632,7 +1632,11 @@
        if(t.farm){ctx.fillStyle='#9c834e';ctx.fillRect(px,py,TILE,TILE);ctx.strokeStyle=t.wet>0?'#8fcd6d':'#cad178';ctx.lineWidth=2;for(let i=5;i<32;i+=8){ctx.beginPath();ctx.moveTo(px+2,py+i);ctx.lineTo(px+30,py+i);ctx.stroke()}}
      }
    }
-   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){let t=tiles[y][x];if(t.tree)drawTree(x,y,t.seed)}
+   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+     const t=tiles[y][x];if(!t.tree)continue;
+     if(camera.zoom<.48){ctx.fillStyle='#286d49';ctx.fillRect(x*TILE+7,y*TILE+7,17,17);}
+     else drawTree(x,y,t.seed);
+   }
    // Settlement fire and communal focal point.
    const cx=16.5*TILE,cy=10.5*TILE;
    ctx.fillStyle='#7b9b6290';ctx.beginPath();ctx.ellipse(cx,cy,72,40,0,0,Math.PI*2);ctx.fill();
@@ -1668,11 +1672,16 @@
    ctx.restore();
  }
  function stepMove(dt){if(state.pause)return;for(const p of people){const d=dist(p.x,p.y,p.tx,p.ty);if(d>.02){const modifier=(p.fate==='favorite'?1.22:p.fate==='disfavored'?.78:1)*(p.migrateTo?4:1);const move=Math.min(d,p.speed*modifier*dt/1000);p.x+=(p.tx-p.x)/d*move;p.y+=(p.ty-p.y)/d*move}}}
+ let lastOverviewFrame=0;
  function animate(ts){if(!last)last=ts;const delta=Math.min(ts-last,100);last=ts;
    if(!state.pause){acc+=delta*state.speed;while(acc>=1000){acc-=1000;tick()}}
    stepMove(delta*state.speed);
    for(let i=effects.length-1;i>=0;i--){effects[i].age+=delta/1000;if(effects[i].age>=effects[i].max)effects.splice(i,1)}
-   drawWorld(ts);requestAnimationFrame(animate);
+   // A full 128×80 overview is thousands of tiles; render its static map at
+   // 12 FPS on phones while the normal camera remains fluid at full frame rate.
+   const overview=camera.zoom<.58;
+   if(!overview||ts-lastOverviewFrame>=82){drawWorld(ts);lastOverviewFrame=ts;}
+   requestAnimationFrame(animate);
  }
  function toWorld(ev){
    const r=C.getBoundingClientRect();
