@@ -208,6 +208,13 @@
   .history-explain{color:#aebdb3;font-size:11px;line-height:1.7;margin:10px 0}
 
   /* Mobile-first navigable land map; no shrinking the whole world into one tiny canvas. */
+
+  .city-age-band{padding:11px 15px;background:linear-gradient(105deg,#263d3b,#192d38);border-top:1px solid #395d50}
+  .city-age-band .age-name{font-size:14px;color:#ffdea0;font-weight:850}
+  .city-age-band .age-details{font-size:11px;color:#d0dcd1;margin:5px 0;line-height:1.5}
+  .city-age-bar{height:7px;background:#0e1d23;border-radius:8px;overflow:hidden;border:1px solid #557265}
+  .city-age-bar>div{height:100%;width:0;background:linear-gradient(90deg,#94c5a7,#f5d180);transition:width .25s}
+  .city-age-space{margin-top:6px;font-size:11px;color:#a6d4df}
   .map-tools{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:10px 12px;background:#14282b;border-top:1px solid #34504d}
   .map-tools button{min-height:44px;min-width:45px;padding:9px 12px;border:1px solid #64847c;border-radius:10px;background:#29483f;color:#f1f8ed;font-weight:800;font-size:14px;touch-action:manipulation}
   .map-tools button:active{background:#4e745b}.map-tools button:focus-visible{outline:3px solid #f1d086}
@@ -247,6 +254,12 @@
     <div class="stage-card" id="worldMap">
       <div class="stage-top"><strong>🌍 <span id="stagePlanetName">ดาวรุ่งอรุณ</span><span class="cosmic-timestamp" id="cosmicHeadline">☸️ มหากัปที่ 1 · วิวัฏฏฐายีกัป</span></strong><small id="calendar">วันที่ 1 · ยุคกำเนิด</small></div>
       <div class="stage-wrap"><canvas id="world" width="1024" height="640" aria-label="แผนที่จำลองโลก คลิกบนแผนที่เพื่อใช้อำนาจของพระเจ้าที่เลือก"></canvas><div class="world-label" id="selectedNote">💧 ฝนแห่งชีวิต · แตะที่แผนที่เพื่อประทานฝน</div></div>
+      <div class="city-age-band">
+        <div class="age-name" id="cityAgeLabel">🏕️ ยุคชุมชนแรกเริ่ม</div>
+        <div class="age-details" id="cityAgeDetails">มนุษย์กำลังเรียนรู้และพัฒนาวิถีชีวิต</div>
+        <div class="city-age-bar"><div id="cityAgeBar"></div></div>
+        <div class="city-age-space" id="cityAgeSpace">🚀 วิจัยอวกาศยังไม่เริ่มต้น</div>
+      </div>
       <div class="map-tools" aria-label="ควบคุมแผนที่">
         <button type="button" id="mapZoomIn" aria-label="ซูมเข้า">＋</button>
         <button type="button" id="mapZoomOut" aria-label="ซูมออก">－</button>
@@ -658,7 +671,7 @@
      `<div class="cosmos-progress" role="progressbar" aria-label="ระดับวิจัยอวกาศ" aria-valuenow="${Math.floor(c.research)}" aria-valuemin="0" aria-valuemax="100"><span style="width:${clamp(c.research,0,100)}%"></span></div>`;
    E('spaceResources').innerHTML=`<span>🪙 เงิน ${Math.floor(state.money)}</span><span>⛏️ แร่ ${Math.floor(state.ore)}</span><span>🚀 ยาน ${c.fleet}</span>`;
    E('planetDetails').innerHTML=`<b>🌍 ${safeName(c.planetName)}</b> · ดาวของคุณ (ผู้เล่น)<br>`+
-       `ประชากร ${people.length} · เทคโนโลยี ${Math.floor(w.technology)} · ความสุข ${Math.floor(state.happiness)}%<br>`+
+       `ประชากรทั้งดาว ${(state.demography?.population||people.length).toLocaleString('en-US')} · เทคโนโลยี ${Math.floor(w.technology)} · ความสุข ${Math.floor(state.happiness)}%<br>`+
        `🏭 อู่ยาน ${c.shipyard?'สร้างแล้ว':'ยังไม่มี'} · 🚀 ยาน ${c.fleet} ลำ · 🌌 ดาวที่มีในเกม 1 ดวง`;
    const set=(id,enabled,title)=>{const el=E(id);el.disabled=!enabled;el.title=title};
    set('fundResearch',c.research<100&&state.money>=12&&state.ore>=2&&state.wood>=3,'ใช้เงิน 12 + แร่ 2 + ไม้ 3 เพื่อวิจัย');
@@ -674,7 +687,7 @@
    if(c.research>=100||state.money<12||state.ore<2||state.wood<3){spaceNotice('ทรัพยากรวิจัยไม่เพียงพอ หรือวิจัยครบแล้ว: ต้องมีเงิน 12 แร่ 2 ไม้ 3');return}
    state.money-=12;state.ore-=2;state.wood-=3;
    c.research=clamp(c.research+16,0,100);state.knowledge+=155;
-   state.w.technology=clamp(4+state.knowledge*.048+state.w.education*.02,0,100);
+   state.w.technology=clamp(Math.max(state.w.technology,4+state.knowledge*.048+state.w.education*.02),0,100);
    state.w.education=clamp(state.w.education+4.3,0,100);
    state.w.infrastructure=clamp(state.w.infrastructure+2.6,0,100);
    state.w.pollution=clamp(state.w.pollution+.6,0,100);
@@ -1000,7 +1013,8 @@
    w.soil=clamp(w.soil-(w.water<22?.08:0)+(state.policy==='คุ้มครองป่าไม้'?.035:0),0,100);
    w.health=clamp(w.health+.08+(state.policy==='ป้องกันโรค'?.16:0)+state.building.clinic*.045+w.education*.0005-w.pollution*.002-w.disease*.003,0,100);
    w.education=clamp(w.education+(people.length>=6?.012:0)+state.building.school*.05+(state.policy==='ลงทุนการศึกษา'?.065:0),0,100);
-   w.technology=clamp(4+state.knowledge*.048+w.education*.02,0,100);
+   // Never erase discovered technology after returning from century fast-forward.
+   w.technology=clamp(Math.max(w.technology,4+state.knowledge*.048+w.education*.02),0,100);
    w.infrastructure=clamp(w.infrastructure+Math.min(people.length,60)*.0015+(houses.length*.003)-(w.disaster*.003),0,100);
    w.energy=clamp(w.energy+.012+(w.forests>25?.012:0)+(state.ore>1?.008:-.012)-(w.technology>65?.02:0),0,100);
    const values=people.map(p=>Math.max(0,p.wealth||0)).sort((a,b)=>a-b);
@@ -1114,16 +1128,16 @@
    pushLog('📜 '+message);
  }
  function historyEraUnlocked(level){
-   const w=state.w,n=people.length;
+   const w=state.w,n=Math.max(people.length,state.demography?.population||0);
    switch(level){
      case 1:return tiles.some(row=>row.some(t=>t.farm));
-     case 2:return n>=14&&w.infrastructure>=22;
-     case 3:return n>=22&&w.technology>=16&&w.infrastructure>=25;
-     case 4:return n>=28&&w.technology>=28&&state.money>=30;
-     case 5:return w.technology>=43&&w.education>=30&&w.infrastructure>=35;
-     case 6:return w.technology>=60&&w.education>=45;
-     case 7:return w.technology>=80&&w.education>=65;
-     case 8:return w.technology>=85&&spaceReady();
+     case 2:return n>=12&&w.technology>=11&&w.infrastructure>=20;
+     case 3:return n>=18&&w.technology>=21&&w.infrastructure>=22;
+     case 4:return n>=25&&w.technology>=31&&w.economy>=27;
+     case 5:return w.technology>=43&&w.education>=26&&w.infrastructure>=25;
+     case 6:return w.technology>=60&&w.education>=40;
+     case 7:return w.technology>=78&&w.education>=55;
+     case 8:return w.technology>=86&&spaceReady();
      default:return false;
    }
  }
@@ -1138,6 +1152,68 @@
    w.conflict=clamp(w.conflict-13,0,100);w.unrest=clamp(w.unrest-8,0,100);
    w.trust=clamp(w.trust+5,0,100);
    historyRecord('peace','🕊️ '+war.groups.join(' และ ')+' หยุดสู้รบด้วยการเจรจาและความเหนื่อยล้า');
+ }
+
+ // Knowledge accumulates during normal play as well as century jumps.
+ // All gains depend on learning, health, institutions and resources; they
+ // do not grant ready-made fleets, online opponents or other player's planets.
+ function advanceCivilizationDay(){
+   const w=state.w,c=state.cosmos;
+   const pop=Math.max(people.length,state.demography?.population||0);
+   const foodSecurity=state.demography?.foodSecurity??foodSecurityIndex();
+   const hardship=clamp((foodSecurity-12)/58,.22,1);
+   const peace=state.history?.war?.days?.7:1;
+   const libraries=state.building.school||0,labs=state.economy?.buildings?.lab||0;
+   const science=(.012+w.education*.00062+Math.min(70,Math.log10(pop+1)*12)*.00030+
+     libraries*.004+labs*.006)*hardship*peace;
+   const previous=w.technology;
+   w.technology=clamp(Math.max(w.technology,4+state.knowledge*.048+w.education*.02)+science,0,100);
+   if(pop>50)w.education=clamp(w.education+.011+libraries*.004,0,100);
+   if(pop>25)w.infrastructure=clamp(w.infrastructure+.004+Math.min(1,Math.log10(pop+1)/6)*.004,0,100);
+   // Economic output for aggregate regions: local markets still have costs.
+   if(pop>=1000&&w.technology>=28){
+     const industry=clamp(Math.log10(pop)/5,.4,1.8);
+     state.money=clamp(state.money+.18*industry,0,99999);
+     state.ore=clamp(state.ore+.065*industry,0,9999);
+     state.wood=clamp(state.wood+.052*industry,0,9999);
+   }
+   if(w.technology>=65&&w.education>=45&&w.infrastructure>=25){
+     const gain=(.07+labs*.06+Math.max(0,w.technology-65)*.0038)*hardship*peace;
+     c.research=clamp(c.research+gain,0,100);
+   }
+   const nextMilestone=[12,22,35,45,60,72,88].find(v=>previous<v&&w.technology>=v);
+   if(nextMilestone&&state.history)historyRecord('event',
+      '🔬 ผู้คนสะสมองค์ความรู้จนเทคโนโลยีระดับ '+nextMilestone+' เปิดโอกาสให้อารยธรรมเปลี่ยนรูปแบบ');
+ }
+ function autonomousSpaceProgram(){
+   const c=state.cosmos,w=state.w;
+   if(!spaceReady())return;
+   if(!c.cosmicReady){
+     c.cosmicReady=true;
+     historyRecord('era','🚀 ชาวโลกพัฒนาความรู้ถึงยุคอวกาศและเริ่มเตรียมออกสำรวจ');
+   }
+   // Citizens may decide to invest in an orbital shipyard after they have
+   // the materials. Ships and cross-planet warfare remain player decisions.
+   if(!c.shipyard&&state.money>=65&&state.ore>=16&&state.wood>=20){
+     state.money-=65;state.ore-=16;state.wood-=20;c.shipyard=true;
+     historyRecord('event','🏭 สังคมร่วมลงทุนสร้างฐานยานอวกาศแห่งแรก');
+   }
+ }
+ function visibleCivilizationEra(){
+   const t=state.w.technology;
+   const techTier=t>=86?8:t>=76?7:t>=57?6:t>=42?5:t>=30?4:t>=20?3:t>=11?2:t>=6?1:0;
+   return Math.max(techTier,state.history?.era||0);
+ }
+ function updateCivilizationUI(){
+   const w=state.w,era=visibleCivilizationEra(),next=HISTORY_ERAS[Math.min(8,era+1)];
+   E('cityAgeLabel').textContent=HISTORY_ERAS[era][0];
+   E('cityAgeDetails').textContent=era>=8?
+     (spaceReady()?'✅ มนุษย์ก้าวเข้าสู่ยุคอวกาศแล้ว':'🔬 วิจัยอวกาศ '+Math.floor(state.cosmos.research)+'% / 80%'):
+     'เทคโนโลยี '+w.technology.toFixed(1)+'% · การศึกษา '+Math.round(w.education)+
+       '% · ระดับถัดไป '+next[0];
+   E('cityAgeBar').style.width=w.technology+'%';
+   E('cityAgeSpace').textContent='🚀 วิจัยอวกาศ '+Math.round(state.cosmos.research)+
+     '% · '+(state.cosmos.shipyard?'มีฐานยานแล้ว':spaceReady()?'พร้อมสร้างฐานยาน':'ศึกษาวิทยาศาสตร์เพื่อปลดล็อก');
  }
  function historyTick(){
    if(state.ticks%4!==0)return;
@@ -1371,12 +1447,10 @@
      state.ticks+=DAYS_PER_PLANET_YEAR*4;
      state.year=Math.floor((state.day-1)/DAYS_PER_PLANET_YEAR)+1;
      const w=state.w,p=d.population;
-     // Schools, medicine and industry diffuse with larger settlements.
-     const learning=p>=1000000?.19:p>=1000?.16:p>=25?.11:.028;
-     w.education=clamp(w.education+(p>=25?.105:.034)+(p>=1000?.017:0),0,95);
-     w.technology=clamp(w.technology+learning*(.45+w.education/105),0,100);
-     w.health=clamp(w.health+(p>=1000?.031:.018)+(w.education>45?.013:0),0,92);
-     w.infrastructure=clamp(w.infrastructure+(p>=1000?.046:p>=25?.024:.01),0,100);
+     // Same learning mechanism at normal speed and during the 100-year skip.
+     for(let day=0;day<DAYS_PER_PLANET_YEAR;day++)advanceCivilizationDay();
+     w.health=clamp(w.health+(p>=1000?.042:.028),0,92);
+     autonomousSpaceProgram();
      state.knowledge=Math.max(state.knowledge,(w.technology-4-w.education*.02)/.048);
      if(state.history?.war&&i>=1)endHistoryWar();
      advanceDemographicYear();
@@ -1453,6 +1527,7 @@
    E('calendar').textContent=`ปีดาว ${state.year} · วันที่ ${((state.day-1)%48)+1}/48 · ${['ฤดูใบไม้ผลิ','ฤดูร้อน','ฤดูฝน','ฤดูหนาว'][state.season]} · ${state.w.weather}`;
    updateCosmicClock();
    updateHistoryUI();
+   updateCivilizationUI();
    refreshMapUI();
    const won=people.length>=20&&state.happiness>50;
    E('mission').innerHTML=won?'🏆 <b>สำเร็จขั้นแรก!</b> ชุมชนเติบโตแล้ว ลองผลักดันเทคโนโลยีและความยั่งยืนโดยไม่สูญเสียเสรีภาพ':'ดูแลประชากรให้ถึง <b>20 คน</b> และความสุขเกิน <b>50%</b> · จับตาโรค น้ำ อาหาร เศรษฐกิจ และความขัดแย้ง';
@@ -1694,6 +1769,7 @@
        `💭 ${person.name} เลือกจะ${actionNames[person.action]} เพราะมีเหตุผลของตนเอง`;
        pushLog(text)}
    }
+   if(state.ticks%4===0){advanceCivilizationDay();autonomousSpaceProgram()}
    historyTick();
    demographicTick();
    if(state.ticks%24===0&&!state.bulk)saveWorld(true);
