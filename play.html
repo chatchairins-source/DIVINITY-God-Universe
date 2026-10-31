@@ -178,6 +178,20 @@
   .cosmic-explainer a{color:#d6dbfa}
   .cosmic-timestamp{display:inline-block;margin-top:4px;font-size:11px;color:#e3ce9c}
   @media(max-width:440px){.cosmic-step{font-size:9px}.cosmic-clock{padding:10px}}
+
+  .history-card{background:#17262b;border:1px solid #71644e;border-radius:12px;padding:12px}
+  .history-era{font-size:18px;font-weight:850;color:#ffe1a5}
+  .history-desc{font-size:11px;color:#c7d4c8;line-height:1.7;margin:6px 0}
+  .history-figures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}
+  .history-figures div{background:#203038;border-radius:9px;padding:8px 5px;text-align:center;font-size:10px;color:#c3d5d0}
+  .history-figures b{display:block;color:#ffe4ae;font-size:18px}
+  .history-war{background:#1d342e;border:1px solid #547363;border-radius:9px;padding:10px;line-height:1.6;font-size:12px}
+  .history-war.active{background:#422a2a;color:#ffe2d8;border-color:#c27b68}
+  .history-records{display:grid;gap:7px;max-height:255px;overflow-y:auto;overscroll-behavior:contain;margin-top:8px}
+  .history-record{font-size:11px;line-height:1.6;border-left:3px solid #bea473;background:#112222;border-radius:7px;padding:8px}
+  .history-record.war{border-left-color:#df8675}.history-record.peace{border-left-color:#84d3a6}
+  .history-record small{display:block;color:#a8c2b4;font-size:10px}
+  .history-explain{color:#aebdb3;font-size:11px;line-height:1.7;margin:10px 0}
   .game-topbar{position:sticky;top:0;z-index:30;background:#0b171ce8;border-bottom:1px solid #405551;backdrop-filter:blur(16px);min-height:53px;display:flex;align-items:center;gap:9px;padding:7px max(12px,calc((100vw - 1500px)/2));overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:none}
   .game-topbar::-webkit-scrollbar{display:none}.game-topbar a{flex:0 0 auto;color:#dcece6;text-decoration:none;border:1px solid #3b524d;border-radius:9px;padding:7px 11px;font-size:12px;font-weight:650;white-space:nowrap}.game-topbar a:hover,.game-topbar a:focus-visible{border-color:#eacb84;background:#243a34;color:#fff4d4}.game-topbar .back-home{color:#f9e4ad;border-color:#9d845d;background:#332e23}.game-topbar .topbar-title{color:#e7c886;font-size:12px;font-weight:800;letter-spacing:1.2px;white-space:nowrap;margin-right:auto}
   .site-game-status{font-size:11px;color:#b4c9c4;margin-left:4px;white-space:nowrap}section[id],#worldMap{scroll-margin-top:72px}
@@ -190,6 +204,7 @@
   <span class="topbar-title">✦ DIVINITY</span>
   <a href="#worldMap">🌍 โลก</a>
   <a href="#planetEconomy">🏗️ ทรัพยากร</a>
+  <a href="#historySection">📜 ประวัติศาสตร์</a>
   <a href="#godPowers">⚡ พลังพระเจ้า</a>
   <a href="#peopleSection">👥 มนุษย์</a>
   <a href="#galaxySection">🌌 จักรวาล</a>
@@ -237,6 +252,23 @@
         <div class="build-list" id="buildList"></div>
         <div class="upgrade-panel" id="planetUpgrade"></div>
         <div class="store-status" id="econStatus" role="status">เลือกอาคารเพื่อเริ่มพัฒนาดาว</div>
+      </section>
+
+      <section id="historySection" aria-label="ประวัติศาสตร์ของโลก">
+        <div class="sect-title">📜 ประวัติศาสตร์และการเปลี่ยนแปลงอารยธรรม</div>
+        <div class="history-card">
+          <div id="historyEra" class="history-era"></div>
+          <div id="historyDescription" class="history-desc"></div>
+          <div class="history-figures">
+            <div><b id="historyBirths">0</b>เกิด</div>
+            <div><b id="historyDeaths">0</b>เสียชีวิต</div>
+            <div><b id="historyWars">0</b>สงครามภายในดาว</div>
+          </div>
+          <div id="historyConflict" class="history-war"></div>
+          <div class="sect-title" style="margin:12px 0 8px">บันทึกเหตุการณ์</div>
+          <div id="historyRecords" class="history-records"></div>
+        </div>
+        <p class="history-explain">เกษตรกรรม การค้า รัฐ โรค ภัยพิบัติ การแย่งทรัพยากร สงครามและสันติภาพเกิดตามเหตุปัจจัยภายในโลกนี้ ไม่ใช่การจำลองเหตุการณ์จริงตามปีที่กำหนด · ไม่มีดาวหรือผู้เล่น AI</p>
       </section>
       <section id="planetShop" class="planet-shop" aria-label="ร้านค้าเกมและระบบเติมเงิน">
         <div class="store-heading"><div class="sect-title" style="margin:0">💎 ร้านค้าจักรวาล</div><span class="cosmos-mode">เติมเงินจริงยังไม่เปิด</span></div>
@@ -378,7 +410,7 @@
  const roles=['ชาวนา','ผู้เก็บอาหาร','นักสำรวจ','ช่างก่อสร้าง','ผู้ดูแล','นักคิด','นักบวช','หมอ','ครู','พ่อค้า','ช่างเหมือง','ผู้พิทักษ์','นักอนุรักษ์'];
  const goals=['อยากมีชีวิตที่มั่นคง','อยากสร้างชุมชนที่ดี','อยากพบสิ่งที่โลกไม่เคยเห็น','อยากช่วยผู้คน','อยากเป็นอิสระ','อยากเป็นที่รัก','อยากค้นหาความจริง'];
  const character=['ใจดี','ทะเยอทะยาน','ขี้สงสัย','รักอิสระ','ชอบเข้าสังคม','เคร่งศรัทธา','อดทน'];
- const actionNames={eat:'หาอะไรกิน',rest:'พักผ่อน',gather:'เก็บอาหาร',farm:'ทำไร่',build:'สร้างบ้าน',help:'ดูแลผู้ป่วย',social:'พูดคุยผูกมิตร',explore:'สำรวจ',pray:'สวดภาวนา',question:'ตั้งคำถาม',resist:'ต่อต้านชะตา',play:'เรียนรู้และเล่น',heal:'รักษาผู้ป่วย',teach:'สอนหนังสือ',trade:'ค้าขาย',mine:'ทำเหมือง',protect:'รักษาความปลอดภัย',conserve:'ดูแลธรรมชาติ',study:'ศึกษาวิทยาการ'};
+ const actionNames={eat:'หาอะไรกิน',rest:'พักผ่อน',gather:'เก็บอาหาร',farm:'ทำไร่',build:'สร้างบ้าน',help:'ดูแลผู้ป่วย',social:'พูดคุยผูกมิตร',explore:'สำรวจ',pray:'สวดภาวนา',question:'ตั้งคำถาม',resist:'ต่อต้านชะตา',play:'เรียนรู้และเล่น',heal:'รักษาผู้ป่วย',teach:'สอนหนังสือ',trade:'ค้าขาย',mine:'ทำเหมือง',protect:'รักษาความปลอดภัย',conserve:'ดูแลธรรมชาติ',study:'ศึกษาวิทยาการ',mediate:'เจรจาสันติภาพ',relocate:'ย้ายถิ่นหนีภัย'};
  const names=['อรุณ','แก้ว','ก้อง','กานต์','ขวัญ','จันทร์','ชล','ดาว','เดือน','ทิว','ทวี','นที','นวล','บัว','บุญ','ปั้น','ฝน','พิม','เพชร','ฟ้า','มณี','เมฆ','ยอด','ริน','รุ่ง','ลม','วายุ','ศรี','แสง','สาย','ส้ม','สุริยา','อิง','อุ่น','ออม','เอก','ไหม','ไผ่','อัญ','ธาร'];
  let nextPersonId=1,selectedPersonId=null;
  let state,tiles,people,houses,effects,logs,hover=null,selected='rain',last=0,acc=0;
@@ -694,7 +726,7 @@
  }
  function reset(){
    state={day:1,ticks:0,faith:100,food:75,happiness:74,pause:false,speed:1,stage:0,construction:0,knowledge:0,bulk:false,year:1,season:0,weather:'แดดอ่อน',wood:45,stone:26,ore:12,money:95,price:1,policy:'ชุมชนพึ่งพากัน',policies:0,building:{school:0,clinic:0,market:0},tech:[],w:{temperature:27,water:76,soil:78,forests:72,biodiversity:83,pollution:7,emissions:4,disease:1,health:74,education:18,inequality:26,crime:7,unrest:6,security:78,economy:45,technology:4,infrastructure:20,energy:45,trust:65,disaster:0,conflict:4,weather:'แดดอ่อน',wildlife:76},autosaveAt:0};
-   state.cosmos=defaultCosmos();state.economy=defaultEconomy();state.store=defaultStore();
+   state.cosmos=defaultCosmos();state.economy=defaultEconomy();state.store=defaultStore();state.history=defaultHistory();
    people=[];nextPersonId=1;selectedPersonId=null;houses=[{x:16,y:9},{x:18,y:10},{x:15,y:11}];effects=[];logs=[];hover=null;makeMap();
    for(let i=0;i<8;i++)spawn(16+rand(-2,2),10+rand(-1.6,1.6));
    pushLog('ผู้คนกลุ่มแรกเดินทางมาถึงดินแดนแห่งนี้แล้ว');updateUI();
@@ -730,7 +762,7 @@
      return `<div class="sys ${bad}"><div class="sys-top"><span class="sys-name" title="${name}">${name}</span><span class="sys-val">${val}</span></div><div class="sys-track"><span style="width:${h}%"></span></div></div>`;
    }).join('');
    const era=w.technology>=72?'ยุคอุตสาหกรรม':w.technology>=35?'ยุคการศึกษา':w.infrastructure>=40?'ยุคหมู่บ้าน':'ยุคเริ่มต้น';
-   E('worldEra').textContent=era;
+   E('worldEra').textContent=HISTORY_ERAS[state.history.era]?.[0]||era;
    E('worldHead').innerHTML=`<b>${w.weather}</b> · นโยบายชุมชน: <b>${state.policy}</b><br>🪵 ไม้ ${Math.floor(state.wood)} · 🪨 หิน ${Math.floor(state.stone)} · ⛏️ แร่ ${Math.floor(state.ore)} · 🪙 เงินหมุนเวียน ${Math.floor(state.money)}<br>🏫 โรงเรียน ${state.building.school} · 🏥 สถานพยาบาล ${state.building.clinic} · 🛒 ตลาด ${state.building.market} · 🏡 บ้าน ${houses.length} · ราคาอาหาร ×${state.price.toFixed(2)}`;
    E('worldConnections').innerHTML=`<b>🌦️ ภูมิอากาศ → อาหาร</b> อุณหภูมิ/ฝน/ดิน/น้ำเปลี่ยนผลผลิต เกิดความอดอยากและการย้ายถิ่น<br>
     <b>🏞️ ป่า → น้ำ → โรค</b> ป่าช่วยดินและสัตว์ป่า การตัดไม้ทำให้ดินแย่และน้ำสะอาดลด<br>
@@ -883,15 +915,159 @@
    const p=couples[irand(0,couples.length-1)],q=people.find(q=>q.id===p.partnerId);
    if(!q||q.age>=50||Math.random()>.075||people.length>=houses.length*9)return;
    const baby=spawn((p.x+q.x)/2,(p.y+q.y)/2,true);
+   if(state.history)state.history.births++;
    baby.parentIds=[p.id,q.id];baby.group=p.group;p.children.push(baby.id);q.children.push(baby.id);p.lastBaby=state.ticks;q.lastBaby=state.ticks;
    remember(p,`มีลูกชื่อ ${baby.name}`);remember(q,`มีลูกชื่อ ${baby.name}`);pushLog(`👶 ${baby.name} เกิดจากครอบครัวของ ${p.name} และ ${q.name}`);
  }
  function cleanDeath(p,reason='death'){
+   if(state.history){if(reason==='migration')state.history.migrations++;else state.history.deaths++;}
    if(p.id===selectedPersonId)selectedPersonId=null;
    const i=people.indexOf(p);if(i>=0)people.splice(i,1);
    for(const q of people){if(q.partnerId===p.id){q.partnerId=null;q.mood=clamp(q.mood-24,0,100);remember(q,`คู่ครอง ${p.name} ${reason==='migration'?'ย้ายถิ่นฐาน':'จากไป'}`)}
      if(q.friendId===p.id){q.friendId=null;remember(q,`${p.name} ผู้เป็นเพื่อน${reason==='migration'?'ย้ายไปอยู่ที่อื่น':'เสียชีวิต'}`);q.mood=clamp(q.mood-16,0,100)} }
-   pushLog(reason==='migration'?`🧳 ${p.name} ย้ายถิ่นฐานเพราะความไม่สงบ`:`🕯️ ${p.name} เสียชีวิตด้วยอายุ ${p.age} ปี ชีวิตหนึ่งสิ้นสุดลง`);
+   pushLog(reason==='migration'?`🧳 ${p.name} ย้ายถิ่นฐานเพราะความไม่สงบ`:reason==='war'?`⚔️ ${p.name} เสียชีวิตในความขัดแย้งบนดาว`:`🕯️ ${p.name} เสียชีวิตด้วยอายุ ${p.age} ปี ชีวิตหนึ่งสิ้นสุดลง`);
+ }
+
+ // Planetary history is emergent. These are historical patterns, not a fixed
+ // reconstruction of Earth, and all factions belong to people on this planet.
+ const HISTORY_ERAS=[
+  ['🏕️ ยุคชุมชนแรกเริ่ม','การล่าสัตว์ เก็บอาหาร และความร่วมมือ'],
+  ['🌾 ยุคเกษตรกรรม','อาหารส่วนเกินทำให้มีหมู่บ้านและครอบครัว'],
+  ['🏺 ยุคนครรัฐ','การแบ่งงาน การค้าขาย และความแตกต่างทางฐานะ'],
+  ['🏰 ยุคอาณาจักร','กฎชุมชน ความเชื่อ อำนาจ และความขัดแย้ง'],
+  ['⛵ ยุคการค้า','เส้นทางแลกเปลี่ยนทรัพยากรและองค์ความรู้'],
+  ['🏭 ยุคอุตสาหกรรม','ผลผลิตเพิ่มขึ้น พร้อมมลพิษและความเหลื่อมล้ำ'],
+  ['🏙️ ยุคสมัยใหม่','ความก้าวหน้าด้านสุขภาพ การเมือง และการศึกษา'],
+  ['💻 ยุคสารสนเทศ','ความรู้และเครือข่ายสังคมเชื่อมโยงอย่างรวดเร็ว'],
+  ['🚀 ยุคอวกาศ','อารยธรรมเตรียมสำรวจจักรวาล โดยยังไม่มีดาว AI']
+ ];
+ const defaultHistory=()=>({era:0,births:0,deaths:0,migrations:0,wars:0,warDeaths:0,treaties:0,
+   cooldown:-1000,war:null,events:[],lastEvent:-1});
+ function ensureHistory(){
+   const old=state.history&&typeof state.history==='object'?state.history:{},d=defaultHistory();
+   const n=(v)=>Number.isFinite(Number(v))?clamp(Math.floor(Number(v)),0,999999):0;
+   state.history={...d,era:clamp(n(old.era),0,8),births:n(old.births),deaths:n(old.deaths),
+     migrations:n(old.migrations),wars:n(old.wars),warDeaths:n(old.warDeaths),treaties:n(old.treaties),
+     cooldown:Number.isFinite(old.cooldown)?old.cooldown:-1000,lastEvent:Number.isFinite(old.lastEvent)?old.lastEvent:-1,
+     war:old.war&&Array.isArray(old.war.groups)&&old.war.groups.length===2?
+       {groups:old.war.groups.slice(0,2).map(String),days:n(old.war.days),fatigue:n(old.war.fatigue)}:null,
+     events:Array.isArray(old.events)?old.events.filter(e=>e&&typeof e.message==='string').slice(0,22).map(e=>({
+       year:n(e.year),day:n(e.day),type:['war','peace','event','era'].includes(e.type)?e.type:'event',
+       message:e.message.slice(0,180)})):[]
+   };
+ }
+ function historyRecord(type,message){
+   const h=state.history;if(!h)return;
+   h.events.unshift({year:state.year,day:state.day,type,message});
+   if(h.events.length>22)h.events.length=22;
+   pushLog('📜 '+message);
+ }
+ function historyEraUnlocked(level){
+   const w=state.w,n=people.length;
+   switch(level){
+     case 1:return tiles.some(row=>row.some(t=>t.farm));
+     case 2:return n>=14&&w.infrastructure>=22;
+     case 3:return n>=22&&w.technology>=16&&w.infrastructure>=25;
+     case 4:return n>=28&&w.technology>=28&&state.money>=30;
+     case 5:return w.technology>=43&&w.education>=30&&w.infrastructure>=35;
+     case 6:return w.technology>=60&&w.education>=45;
+     case 7:return w.technology>=80&&w.education>=65;
+     case 8:return w.technology>=85&&spaceReady();
+     default:return false;
+   }
+ }
+ function civilTension(){
+   const w=state.w;
+   return clamp(w.unrest*.33+w.conflict*.34+w.inequality*.22+(100-w.trust)*.18+
+     (state.food<people.length*1.2?15:0)+(w.water<22?12:0),0,100);
+ }
+ function endHistoryWar(){
+   const h=state.history,w=state.w,war=h.war;if(!war)return;
+   h.treaties++;h.cooldown=state.day;h.war=null;
+   w.conflict=clamp(w.conflict-13,0,100);w.unrest=clamp(w.unrest-8,0,100);
+   w.trust=clamp(w.trust+5,0,100);
+   historyRecord('peace','🕊️ '+war.groups.join(' และ ')+' หยุดสู้รบด้วยการเจรจาและความเหนื่อยล้า');
+ }
+ function historyTick(){
+   if(state.ticks%4!==0)return;
+   const h=state.history,w=state.w;
+   if(h.era<8&&historyEraUnlocked(h.era+1)){h.era++;historyRecord('era','🏛️ อารยธรรมเข้าสู่ '+HISTORY_ERAS[h.era][0]);}
+   if(h.war){
+     const war=h.war;war.days++;war.fatigue+=3;
+     state.food=Math.max(0,state.food-.23);state.money=Math.max(0,state.money-.16);
+     w.infrastructure=clamp(w.infrastructure-.016,0,100);
+     if(war.days%7===0){
+       const residents=people.filter(p=>p.age>=17&&war.groups.includes(p.group));
+       if(residents.length){
+         const p=residents[irand(0,residents.length-1)];
+         p.health=clamp(p.health-rand(7,13),0,100);
+         p.stress=clamp((p.stress||10)+5,0,100);
+         if(p.health<=0){h.warDeaths++;cleanDeath(p,'war')}
+       }
+       historyRecord('war','⚔️ การปะทะทำให้มีผู้บาดเจ็บ เสบียงและการค้าชะงัก');
+     }
+     if(war.days>=14&&(war.fatigue>=75||civilTension()<35||Math.random()<.026)||war.days>=75)endHistoryWar();
+   }else if(h.era>=2&&people.length>=18&&state.day-h.cooldown>40&&civilTension()>58){
+     const groups=Object.entries(people.filter(p=>p.age>=17).reduce((a,p)=>(a[p.group]=(a[p.group]||0)+1,a),{}))
+       .filter(([,count])=>count>=3).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([name])=>name);
+     if(groups.length===2&&Math.random()<.018){
+       h.war={groups,days:0,fatigue:0};h.wars++;
+       historyRecord('war','⚔️ '+groups.join(' กับ ')+' เกิดความขัดแย้งด้วยอาวุธจากความตึงเครียดในสังคม');
+     }
+   }
+   if(state.day%12===0&&h.lastEvent!==state.day&&Math.random()<.42){
+     h.lastEvent=state.day;
+     const events=[];
+     if(state.food<people.length*2&&w.soil>20)events.push(()=>{
+       state.food=clamp(state.food+people.length*.45+3,0,9999);
+       historyRecord('event','🌾 ชุมชนตั้งยุ้งฉางและรวบรวมเสบียงเพื่อรับมืออาหารขาดแคลน');
+     });
+     if(w.disease>12&&w.education>15)events.push(()=>{
+       w.health=clamp(w.health+2,0,100);state.knowledge+=3;
+       historyRecord('event','🩺 ผู้รักษาเรียนรู้วิธีป้องกันโรคและดูแลคนเจ็บ');
+     });
+     if(w.inequality>35&&people.length>=12)events.push(()=>{
+       w.inequality=clamp(w.inequality-3,0,100);w.unrest=clamp(w.unrest-1,0,100);
+       historyRecord('event','⚖️ ประชาชนผลักดันการแบ่งปันผลผลิตและกติกาความเป็นธรรม');
+     });
+     if(h.era>=2&&w.education>=20)events.push(()=>{
+       w.education=clamp(w.education+.6,0,100);state.knowledge+=4;
+       historyRecord('event','📚 ความรู้และการบันทึกเรื่องราวแพร่ขยายสู่คนรุ่นใหม่');
+     });
+     if(h.era>=2&&state.money>20)events.push(()=>{
+       state.money+=5;w.economy=clamp(w.economy+.4,0,100);
+       historyRecord('event','⛵ เส้นทางการค้าภายในดาวช่วยให้ชุมชนแลกเปลี่ยนสินค้า');
+     });
+     if(w.water<35)events.push(()=>{
+       w.water=clamp(w.water+2.5,0,100);
+       historyRecord('event','💧 ชุมชนขุดบ่อและสร้างระบบจัดการน้ำ');
+     });
+     if(h.era>=5&&w.pollution>30)events.push(()=>{
+       w.pollution=clamp(w.pollution-1.5,0,100);
+       historyRecord('event','🌿 ประชาชนเริ่มเรียกร้องมาตรการป้องกันมลพิษ');
+     });
+     if(events.length)events[irand(0,events.length-1)]();
+   }
+ }
+ function updateHistoryUI(){
+   const h=state.history,info=HISTORY_ERAS[h.era];
+   E('historyEra').textContent=info[0];
+   E('historyDescription').textContent=info[1]+' · ปีดาว '+state.year;
+   E('historyBirths').textContent=h.births;
+   E('historyDeaths').textContent=h.deaths;
+   E('historyWars').textContent=h.wars;
+   const label=E('historyConflict');label.classList.toggle('active',!!h.war);
+   label.textContent=h.war?'⚔️ สงครามภายในดาว: '+h.war.groups.join(' กับ ')+
+     ' · '+h.war.days+' วัน · ความเหนื่อยล้า '+Math.floor(h.war.fatigue):
+     '🕊️ ไม่มีสงครามในขณะนี้ · สนธิสัญญาสงบศึก '+h.treaties+' ครั้ง · เสียชีวิตจากสงคราม '+h.warDeaths+' คน';
+   const content=h.events.map(e=>e.day+':'+e.type+':'+e.message).join('|');
+   const list=E('historyRecords');
+   if(list.dataset.snapshot!==content){
+     list.dataset.snapshot=content;
+     list.innerHTML=h.events.map(e=>'<div class="history-record '+(e.type==='war'?'war':e.type==='peace'?'peace':'')+'">'+
+       '<small>ปีดาว '+e.year+' · วันที่ '+e.day+'</small>'+safeName(e.message)+'</div>').join('')||
+       '<div class="history-record">ผู้คนกำลังสร้างประวัติศาสตร์ของตนเอง</div>';
+   }
  }
  function saveWorld(silent=false){
    try{const data={version:SAVE_VERSION,date:Date.now(),state:{...state,bulk:false},people,tiles,houses,nextPersonId,selectedPersonId,logs};
@@ -900,7 +1076,7 @@
  }
  function importWorld(data){
    if(!data||![2,3,4,5].includes(data.version)||!data.state?.w||!Array.isArray(data.people)||!Array.isArray(data.tiles)||data.tiles.length!==H||!Array.isArray(data.houses)||data.people.length>POP_CAP){throw new Error('ไฟล์ไม่ใช่โลกเวอร์ชันนี้หรือข้อมูลผิดรูปแบบ')}
-   state=data.state;state.bulk=false;state.pause=true;state.speed=1;ensureCosmos();ensureEconomy();ensureStore();
+   state=data.state;state.bulk=false;state.pause=true;state.speed=1;ensureCosmos();ensureEconomy();ensureStore();ensureHistory();
    people=data.people;tiles=data.tiles;houses=data.houses;nextPersonId=data.nextPersonId||Math.max(0,...people.map(p=>p.id))+1;
    selectedPersonId=data.selectedPersonId||null;logs=(data.logs||[]).slice(0,8);effects=[];acc=0;hover=null;last=0;
    if(!chosenPerson())selectedPersonId=null;
@@ -916,6 +1092,7 @@
    E('faithFill').style.width=(state.faith/MAX_FAITH*100)+'%';
    E('calendar').textContent=`ปีดาว ${state.year} · วันที่ ${((state.day-1)%48)+1}/48 · ${['ฤดูใบไม้ผลิ','ฤดูร้อน','ฤดูฝน','ฤดูหนาว'][state.season]} · ${state.w.weather}`;
    updateCosmicClock();
+   updateHistoryUI();
    const won=people.length>=20&&state.happiness>50;
    E('mission').innerHTML=won?'🏆 <b>สำเร็จขั้นแรก!</b> ชุมชนเติบโตแล้ว ลองผลักดันเทคโนโลยีและความยั่งยืนโดยไม่สูญเสียเสรีภาพ':'ดูแลประชากรให้ถึง <b>20 คน</b> และความสุขเกิน <b>50%</b> · จับตาโรค น้ำ อาหาร เศรษฐกิจ และความขัดแย้ง';
    showSystems();
@@ -970,6 +1147,8 @@
      protect:15+(p.job==='ผู้พิทักษ์'?48:0)+state.w.crime*.12,
      conserve:15+(p.job==='นักอนุรักษ์'?51:0)+(100-state.w.forests)*.13,
      study:18+(p.job==='นักคิด'?21:0)+(p.education||0)*.20+p.curiosity*.15,
+     mediate:(state.history?.war?53:6)+p.kindness*.20+p.social*.18,
+     relocate:(state.history?.war?28:0)+(p.stress>75?35:0)+(state.food<people.length*.4?16:0),
      resist:Math.max(-40,-35+(p.fate==='disfavored'?42:0)-p.trust*.3+p.autonomy*.24+p.resilience*.08)
    };
    if(p.hunger>76&&state.food>1)options.eat+=90;
@@ -993,6 +1172,8 @@
      protect:['ความปลอดภัยต้องเริ่มที่ชุมชน','ฉันอยากให้ทุกคนปลอดภัย'],
      conserve:['ป่านี้เป็นบ้านของทุกชีวิต','ถ้าธรรมชาติพัง เราก็อยู่ไม่ได้'],
      study:['ฉันจะพัฒนาสิ่งประดิษฐ์','ความรู้ใหม่จะช่วยคนรุ่นหลัง'],
+     mediate:['ฉันอยากให้ทุกคนหยุดทำร้ายกัน','เราควรเจรจาก่อนความสูญเสียจะมากกว่านี้'],
+     relocate:['ที่นี่ไม่ปลอดภัย ฉันต้องหาที่พักพิง','ฉันจะย้ายไปในที่ที่ปลอดภัยกว่า'],
      resist:['ฉันไม่ยอมให้พระเจ้ากำหนดความคิด','ไม่ว่าใครจะเกลียด ฉันจะเลือกทางเอง']
    };
    let thought=thoughts[choice][irand(0,1)];
@@ -1032,6 +1213,10 @@
      case 'trade':state.money+=rand(.6,1.8)*(.7+state.w.economy/100);p.wealth+=rand(.4,1.4);state.w.economy=clamp(state.w.economy+.09,0,100);p.energy-=3;break;
      case 'mine':if(state.w.energy>8){state.stone+=rand(.6,1.5);state.ore+=rand(.15,.6);state.w.pollution=clamp(state.w.pollution+.10,0,100);state.w.energy=clamp(state.w.energy-.13,0,100);p.wealth+=.45;p.energy-=7}break;
      case 'protect':state.w.security=clamp(state.w.security+.27,0,100);state.w.crime=clamp(state.w.crime-.22,0,100);p.energy-=4;break;
+     case 'mediate':state.w.unrest=clamp(state.w.unrest-.08,0,100);state.w.conflict=clamp(state.w.conflict-.05,0,100);
+       if(state.history?.war)state.history.war.fatigue+=.35;p.energy-=3;break;
+     case 'relocate':{const pos=findLand(14+rand(-5,6),10+rand(-4,5));p.tx=pos.x;p.ty=pos.y;
+       p.stress=clamp(p.stress-6,0,100);p.wealth=Math.max(0,p.wealth-.5);p.energy-=4;break}
      case 'conserve':state.w.biodiversity=clamp(state.w.biodiversity+.10,0,100);state.w.pollution=clamp(state.w.pollution-.08,0,100);if(Math.random()<.12){const spots=tiles.flat().filter(t=>t.type==='land'&&!t.tree&&!t.farm);if(spots.length)spots[irand(0,spots.length-1)].tree=true}p.energy-=3;break;
      case 'study':state.knowledge+=.8+p.curiosity/90;state.w.education=clamp(state.w.education+.015,0,100);p.education=clamp(p.education+.5,0,100);p.energy-=3;break;
      case 'play':state.knowledge+=.06;p.mood=clamp(p.mood+1.8,0,100);p.energy-=2;break;
@@ -1136,6 +1321,7 @@
        `💭 ${person.name} เลือกจะ${actionNames[person.action]} เพราะมีเหตุผลของตนเอง`;
        pushLog(text)}
    }
+   historyTick();
    if(state.ticks%24===0&&!state.bulk)saveWorld(true);
    if(!state.bulk)updateUI();
  }
