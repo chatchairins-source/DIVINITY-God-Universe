@@ -159,6 +159,12 @@
   .upgrade-panel{margin-top:10px;border:1px solid #846c3e;border-radius:12px;padding:11px;background:linear-gradient(120deg,#3a3426,#213a34)}
   .upgrade-panel b{color:#ffe1a0}.upgrade-panel .upgrade-title{font-size:13px;font-weight:760}
   .upgrade-panel .upgrade-detail{font-size:11px;line-height:1.8;color:#e2d4b5;margin:5px 0}
+  .build-feedback{font-size:11px;line-height:1.5;margin:7px 1px 0;padding:5px 7px;border-radius:7px;background:#192b2b;color:#d3ecc9;min-height:25px}
+  .build-feedback.short{background:#3d2e24;color:#ffe3af}
+  .upgrade-toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(12px);max-width:min(92vw,540px);width:max-content;z-index:9999;pointer-events:none;background:#19392f;border:2px solid #94d4a2;color:#f5ffeb;font-size:14px;line-height:1.6;font-weight:750;padding:12px 16px;border-radius:12px;box-shadow:0 8px 30px #050a0cb3;opacity:0;transition:opacity .16s,transform .16s;text-align:center}
+  .upgrade-toast.is-visible{opacity:1;transform:translateX(-50%) translateY(0)}
+  .upgrade-toast.is-warning{background:#493329;border-color:#e6b77b;color:#fff0d5}
+  @media(max-width:600px){.upgrade-toast{font-size:13px;bottom:calc(85px + env(safe-area-inset-bottom,0px))}}
   .upgrade-button{width:100%;margin-top:9px;min-height:64px;background:#e3b866;color:#15221c;border:2px solid #ffe3a7;font-size:16px;line-height:1.4;font-weight:850;border-radius:13px;box-shadow:0 4px 0 #674b27;padding:13px 16px}
   .upgrade-button:active,.build-card button:active{transform:translateY(2px);box-shadow:none}
   .build-card button{width:100%;min-height:52px;padding:12px 9px;font-size:13px;line-height:1.4;border-radius:11px}
@@ -318,6 +324,7 @@
         <div class="build-list" id="buildList"></div>
         <div class="upgrade-panel" id="planetUpgrade"></div>
         <div class="store-status" id="econStatus" role="status">เลือกอาคารเพื่อเริ่มพัฒนาดาว</div>
+        <div class="upgrade-toast" id="upgradeToast" role="status" aria-live="polite"></div>
       </section>
 
       <section id="historySection" aria-label="ประวัติศาสตร์ของโลก">
@@ -537,21 +544,35 @@
  function missingResources(cost){return Object.entries(cost).filter(([key,val])=>resourceAmount(key)+.00001<val).map(([key,val])=>RESOURCES[key][0]+' ขาด '+Math.ceil(val-resourceAmount(key))).join(' · ')}
  function payResources(cost){if(!hasResources(cost))return false;for(const [key,val] of Object.entries(cost))addResource(key,-val);return true}
  function buildingCost(key){const def=BUILDINGS[key],level=state.economy.buildings[key];return Object.fromEntries(Object.entries(def.base).map(([k,v])=>[k,Math.ceil(v*(1+level*.7))]))}
- function economyNotice(text){E('econStatus').textContent=text;pushLog(text);updateUI()}
+ let lastUpgradeToastTimer=null;
+ function showUpgradeToast(message,warning=false){
+   const toast=E('upgradeToast');if(!toast)return;
+   if(lastUpgradeToastTimer)clearTimeout(lastUpgradeToastTimer);
+   toast.textContent=message;
+   toast.classList.toggle('is-warning',warning);
+   toast.classList.add('is-visible');
+   lastUpgradeToastTimer=setTimeout(()=>toast.classList.remove('is-visible'),4000);
+ }
+ function economyNotice(text,warning=false){
+   E('econStatus').textContent=text;
+   showUpgradeToast(text,warning);
+   pushLog(text);
+   updateUI();
+ }
  function buildPlanetFacility(key){
    const def=BUILDINGS[key];if(!def)return;
    const current=state.economy.buildings[key];if(current>=def.max){economyNotice('อาคารประเภทนี้ถึงระดับสูงสุดแล้ว');return}
-   const cost=buildingCost(key);if(!payResources(cost)){economyNotice('📦 '+def.name+' ยังสร้างไม่ได้ — '+missingResources(cost));return}
+   const cost=buildingCost(key);if(!payResources(cost)){economyNotice('📦 '+def.name+' ยังอัปเกรดไม่ได้ — '+missingResources(cost),true);return}
    state.economy.buildings[key]++;
    state.w.infrastructure=clamp(state.w.infrastructure+.55,0,100);
    state.w.pollution=clamp(state.w.pollution+(key==='smelter'?1:key==='mine'?.4:0),0,100);
-   economyNotice('🏗️ สร้าง '+def.name+' ระดับ '+state.economy.buildings[key]+' สำเร็จ');
+   economyNotice('✅ '+def.name+' อัปเกรดเป็นระดับ '+state.economy.buildings[key]+' แล้ว');
    saveWorld(true);
  }
  function upgradePlanet(){
    const eco=state.economy,up=PLANET_UPGRADES[eco.level];if(!up){economyNotice('🌟 ดาวพัฒนาไปถึงระดับ 5 สูงสุดของต้นแบบแล้ว');return}
-   if(!up.req()){economyNotice('🔒 ยังไม่ผ่านเงื่อนไขพัฒนาไปสู่ '+up.name);return}
-   if(!payResources(up.cost)){economyNotice('📦 พัฒนาดาวยังไม่ได้ — '+missingResources(up.cost));return}
+   if(!up.req()){economyNotice('🔒 ยังไม่ผ่านเงื่อนไขพัฒนาไปสู่ '+up.name,true);return}
+   if(!payResources(up.cost)){economyNotice('📦 พัฒนาดาวยังไม่ได้ — '+missingResources(up.cost),true);return}
    eco.level++;
    state.w.infrastructure=clamp(state.w.infrastructure+7,0,100);
    state.w.water=clamp(state.w.water+2,0,100);
@@ -599,17 +620,23 @@
    const list=E('buildList');
    if(list.childElementCount!==Object.keys(BUILDINGS).length){
      list.innerHTML=Object.entries(BUILDINGS).map(([key,def])=>
-       `<div class="build-card" data-building-card="${key}"><div class="build-title"></div><div class="build-desc">${def.desc}</div><div class="build-cost"></div><button type="button" data-building="${key}"></button></div>`).join('');
+       `<div class="build-card" data-building-card="${key}"><div class="build-title"></div><div class="build-desc">${def.desc}</div><div class="build-cost"></div><button type="button" data-building="${key}"></button><div class="build-feedback" data-building-feedback="${key}"></div></div>`).join('');
    }
    for(const [key,def] of Object.entries(BUILDINGS)){
      const level=eco.buildings[key],max=level>=def.max,cost=max?null:buildingCost(key),can=!max&&hasResources(cost);
      const card=list.querySelector(`[data-building-card="${key}"]`),button=card.querySelector('button');
-     card.querySelector('.build-title').textContent=`${def.name} · Lv.${level}`;
-     card.querySelector('.build-cost').textContent=max?'ถึงระดับสูงสุดแล้ว':resourceCostText(cost);
+     const header=`${def.name} · Lv.${level}`,costText=max?'ถึงระดับสูงสุดแล้ว':resourceCostText(cost);
+     if(card.querySelector('.build-title').textContent!==header)card.querySelector('.build-title').textContent=header;
+     if(card.querySelector('.build-cost').textContent!==costText)card.querySelector('.build-cost').textContent=costText;
      button.disabled=max;
      button.classList.toggle('need-resources',!max&&!can);
-     button.textContent=max?'เต็มแล้ว':level?'⬆️ อัปเกรดอาคาร':'🏗️ สร้างอาคาร';
+     const title=max?'เต็มแล้ว':level?'⬆️ อัปเกรดอาคาร':'🏗️ สร้างอาคาร';
+     if(button.textContent!==title)button.textContent=title;
      button.title=max?'อาคารถึงระดับสูงสุดแล้ว':can?'พร้อมดำเนินการ':'แตะเพื่อดูทรัพยากรที่ยังขาด';
+     const feedback=card.querySelector('[data-building-feedback]');
+     const msg=max?'✅ อาคารถึงระดับสูงสุดแล้ว':can?'✅ ทรัพยากรพร้อมอัปเกรด':'📦 '+missingResources(cost);
+     if(feedback.textContent!==msg)feedback.textContent=msg;
+     feedback.classList.toggle('short',!max&&!can);
    }
    const panel=E('planetUpgrade'),up=PLANET_UPGRADES[eco.level];
    if(!up){
@@ -1778,6 +1805,7 @@
    state.w.infrastructure=clamp(state.w.infrastructure+.6,0,100);
    pushLog('🏡 ชุมชนร่วมกันสร้างบ้านหลังใหม่เพื่อรองรับครอบครัวที่เพิ่มขึ้น');
  }
+ let lastSimulationUIPaint=0;
  function tick(){
    state.ticks++;if(state.ticks%4===0)state.day++;
    worldTick();
@@ -1858,7 +1886,11 @@
    historyTick();
    demographicTick();
    if(state.ticks%24===0&&!state.bulk)saveWorld(true);
-   if(!state.bulk)updateUI();
+   // Frequent heavy DOM rebuilds during 3x/10x simulation can delay iOS taps.
+   // Only the simulation loop is throttled; buttons call updateUI immediately.
+   if(!state.bulk&&Date.now()-lastSimulationUIPaint>=230){
+     lastSimulationUIPaint=Date.now();updateUI();
+   }
  }
  function usePower(x,y){
    const tx=Math.floor(x),ty=Math.floor(y),t=tileAt(tx,ty);if(!t)return;
