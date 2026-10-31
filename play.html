@@ -139,7 +139,14 @@
   .upgrade-panel{margin-top:10px;border:1px solid #846c3e;border-radius:12px;padding:11px;background:linear-gradient(120deg,#3a3426,#213a34)}
   .upgrade-panel b{color:#ffe1a0}.upgrade-panel .upgrade-title{font-size:13px;font-weight:760}
   .upgrade-panel .upgrade-detail{font-size:11px;line-height:1.8;color:#e2d4b5;margin:5px 0}
-  .upgrade-button{width:100%;margin-top:6px;background:#9a743a;color:#111e1d;border-color:#f4d19a;font-size:12px}
+  .upgrade-button{width:100%;margin-top:9px;min-height:64px;background:#e3b866;color:#15221c;border:2px solid #ffe3a7;font-size:16px;line-height:1.4;font-weight:850;border-radius:13px;box-shadow:0 4px 0 #674b27;padding:13px 16px}
+  .upgrade-button:active,.build-card button:active{transform:translateY(2px);box-shadow:none}
+  .build-card button{width:100%;min-height:52px;padding:12px 9px;font-size:13px;line-height:1.4;border-radius:11px}
+  .build-card button,.upgrade-button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+  .build-card button.need-resources{opacity:1;background:#35433a;color:#ffdea2;border-color:#756343}
+  .upgrade-button.need-resources{background:#564b37;color:#ffe8bf;border-color:#b39866;box-shadow:none}
+  .upgrade-hint{margin-top:11px;line-height:1.7;font-size:12px;color:#ffe1a3;min-height:20px}
+  @media (pointer:coarse){.upgrade-button{min-height:68px}.build-card button{min-height:56px}}
   .store-wallet{background:#151f39;border:1px solid #465a7e;border-radius:11px;padding:11px;color:#dce9ff;font-size:12px;line-height:1.7}
   .store-wallet b{color:#fee7ac;font-size:16px}
   .skin-list{display:grid;gap:7px;margin-top:8px}.skin-card{background:#10243b;border:1px solid #345572;border-radius:10px;padding:9px;display:flex;gap:8px;align-items:center;justify-content:space-between}
@@ -421,13 +428,14 @@
  }
  function resourceCostText(cost){return Object.entries(cost).map(([key,val])=>`${RESOURCES[key][0]} ${Math.ceil(val)}`).join(' · ')}
  function hasResources(cost){return Object.entries(cost).every(([key,val])=>resourceAmount(key)+.00001>=val)}
+ function missingResources(cost){return Object.entries(cost).filter(([key,val])=>resourceAmount(key)+.00001<val).map(([key,val])=>RESOURCES[key][0]+' ขาด '+Math.ceil(val-resourceAmount(key))).join(' · ')}
  function payResources(cost){if(!hasResources(cost))return false;for(const [key,val] of Object.entries(cost))addResource(key,-val);return true}
  function buildingCost(key){const def=BUILDINGS[key],level=state.economy.buildings[key];return Object.fromEntries(Object.entries(def.base).map(([k,v])=>[k,Math.ceil(v*(1+level*.7))]))}
  function economyNotice(text){E('econStatus').textContent=text;pushLog(text);updateUI()}
  function buildPlanetFacility(key){
    const def=BUILDINGS[key];if(!def)return;
    const current=state.economy.buildings[key];if(current>=def.max){economyNotice('อาคารประเภทนี้ถึงระดับสูงสุดแล้ว');return}
-   const cost=buildingCost(key);if(!payResources(cost)){economyNotice('ทรัพยากรไม่เพียงพอ: '+resourceCostText(cost));return}
+   const cost=buildingCost(key);if(!payResources(cost)){economyNotice('📦 '+def.name+' ยังสร้างไม่ได้ — '+missingResources(cost));return}
    state.economy.buildings[key]++;
    state.w.infrastructure=clamp(state.w.infrastructure+.55,0,100);
    state.w.pollution=clamp(state.w.pollution+(key==='smelter'?1:key==='mine'?.4:0),0,100);
@@ -437,7 +445,7 @@
  function upgradePlanet(){
    const eco=state.economy,up=PLANET_UPGRADES[eco.level];if(!up){economyNotice('🌟 ดาวพัฒนาไปถึงระดับ 5 สูงสุดของต้นแบบแล้ว');return}
    if(!up.req()){economyNotice('🔒 ยังไม่ผ่านเงื่อนไขพัฒนาไปสู่ '+up.name);return}
-   if(!payResources(up.cost)){economyNotice('ทรัพยากรอัปเกรดดาวยังไม่ครบ: '+resourceCostText(up.cost));return}
+   if(!payResources(up.cost)){economyNotice('📦 พัฒนาดาวยังไม่ได้ — '+missingResources(up.cost));return}
    eco.level++;
    state.w.infrastructure=clamp(state.w.infrastructure+7,0,100);
    state.w.water=clamp(state.w.water+2,0,100);
@@ -474,15 +482,42 @@
      const amount=resourceAmount(k),flow=eco.lastFlow[k],sign=flow>0?'+':'',text=Number.isFinite(flow)?`${sign}${flow.toFixed(1)}/วัน`:'คลังทรัพยากร';
      return `<div class="resource-chip"><span class="res-label">${meta[0]} ${meta[1]}</span><span class="res-value">${Math.floor(amount).toLocaleString('th-TH')}</span><span class="res-flow ${flow<0?'negative':''}">${text}</span></div>`;
    }).join('');
-   E('buildList').innerHTML=Object.entries(BUILDINGS).map(([key,def])=>{
-     const level=eco.buildings[key],max=level>=def.max,cost=!max?buildingCost(key):null,can=!max&&hasResources(cost);
-     return `<div class="build-card"><div class="build-title">${def.name} · Lv.${level}</div><div class="build-desc">${def.desc}</div><div class="build-cost">${max?'ถึงระดับสูงสุดแล้ว':resourceCostText(cost)}</div><button data-building="${key}" ${can?'':'disabled'}>${max?'เต็มแล้ว':level?'อัปเกรดอาคาร':'สร้างอาคาร'}</button></div>`;
-   }).join('');
-   const up=PLANET_UPGRADES[eco.level];
-   if(!up){E('planetUpgrade').innerHTML='<div class="upgrade-title">🌟 ดาว Lv.5 · พัฒนาสูงสุดแล้ว</div><div class="upgrade-detail">คุณยังสามารถสร้างโรงงานและสะสมทรัพยากรสำหรับยุคอวกาศได้</div>';return}
+   // Keep the actual buttons in the DOM. Replacing them each simulation tick
+   // cancels touch clicks on mobile while a finger is pressing the control.
+   const list=E('buildList');
+   if(list.childElementCount!==Object.keys(BUILDINGS).length){
+     list.innerHTML=Object.entries(BUILDINGS).map(([key,def])=>
+       `<div class="build-card" data-building-card="${key}"><div class="build-title"></div><div class="build-desc">${def.desc}</div><div class="build-cost"></div><button type="button" data-building="${key}"></button></div>`).join('');
+   }
+   for(const [key,def] of Object.entries(BUILDINGS)){
+     const level=eco.buildings[key],max=level>=def.max,cost=max?null:buildingCost(key),can=!max&&hasResources(cost);
+     const card=list.querySelector(`[data-building-card="${key}"]`),button=card.querySelector('button');
+     card.querySelector('.build-title').textContent=`${def.name} · Lv.${level}`;
+     card.querySelector('.build-cost').textContent=max?'ถึงระดับสูงสุดแล้ว':resourceCostText(cost);
+     button.disabled=max;
+     button.classList.toggle('need-resources',!max&&!can);
+     button.textContent=max?'เต็มแล้ว':level?'⬆️ อัปเกรดอาคาร':'🏗️ สร้างอาคาร';
+     button.title=max?'อาคารถึงระดับสูงสุดแล้ว':can?'พร้อมดำเนินการ':'แตะเพื่อดูทรัพยากรที่ยังขาด';
+   }
+   const panel=E('planetUpgrade'),up=PLANET_UPGRADES[eco.level];
+   if(!up){
+     if(panel.dataset.level!=='5'){
+       panel.dataset.level='5';
+       panel.innerHTML='<div class="upgrade-title">🌟 ดาว Lv.5 · พัฒนาสูงสุดแล้ว</div><div class="upgrade-detail">คุณยังสามารถสร้างโรงงานและสะสมทรัพยากรสำหรับยุคอวกาศได้</div>';
+     }
+     return;
+   }
    const condition=eco.level===1?'สร้างอาณานิคม':eco.level===2?'โครงสร้างพื้นฐาน ≥ 25':eco.level===3?'การศึกษา ≥ 28':'เทคโนโลยี ≥ 65 และวิจัยอวกาศ ≥ 70';
-   const can=up.req()&&hasResources(up.cost);
-   E('planetUpgrade').innerHTML=`<div class="upgrade-title">🌍 อัปเกรดดาว → Lv.${eco.level+1} · ${up.name}</div><div class="upgrade-detail">ต้องมี: ${resourceCostText(up.cost)}<br>เงื่อนไข: ${condition} ${up.req()?'✅':'🔒'}<br>โบนัสผ่านภารกิจ: 💎 ${up.reward} คริสตัลฟรี</div><button class="upgrade-button" id="upgradePlanet" ${can?'':'disabled'}>🚀 พัฒนาดาวสู่ระดับ ${eco.level+1}</button>`;
+   if(panel.dataset.level!==String(eco.level)){
+     panel.dataset.level=String(eco.level);
+     panel.innerHTML=`<div class="upgrade-title">🌍 อัปเกรดดาว → Lv.${eco.level+1} · ${up.name}</div><div class="upgrade-detail"></div><button type="button" class="upgrade-button" id="upgradePlanet">🚀 พัฒนาดาวสู่ระดับ ${eco.level+1}</button><div class="upgrade-hint" id="upgradeHint" role="status" aria-live="polite"></div>`;
+   }
+   const readyRequirement=up.req(),readyResources=hasResources(up.cost),can=readyRequirement&&readyResources;
+   panel.querySelector('.upgrade-detail').innerHTML=`ต้องมี: ${resourceCostText(up.cost)}<br>เงื่อนไข: ${condition} ${readyRequirement?'✅':'🔒'}<br>โบนัสผ่านภารกิจ: 💎 ${up.reward} คริสตัลฟรี`;
+   const button=E('upgradePlanet');
+   button.classList.toggle('need-resources',!can);
+   button.title=can?'แตะเพื่อพัฒนาดาวทันที':'แตะเพื่อดูสิ่งที่ยังขาดในการอัปเกรด';
+   E('upgradeHint').textContent=can?'✅ พร้อมพัฒนาดาวแล้ว — แตะปุ่มหนึ่งครั้ง':(!readyRequirement?'🔒 เงื่อนไขยังไม่ครบ: '+condition+'  ':'')+(!readyResources?'📦 ยังขาด: '+missingResources(up.cost):'');
  }
  function buyOrEquipSkin(key){
    const item=SKINS[key];if(!item)return;
