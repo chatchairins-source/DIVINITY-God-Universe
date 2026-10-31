@@ -32,6 +32,12 @@
   .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
   #population{font-size:clamp(15px,3.6vw,23px);overflow-wrap:anywhere;line-height:1.25}
   .epoch-button{min-height:52px;padding:10px 14px;border:2px solid #f1cb81!important;background:#57472d!important;color:#fff2d1!important;font-size:13px!important;font-weight:850;touch-action:manipulation}
+  .epoch-button:disabled{opacity:.6;cursor:progress}
+  .century-progress-area{padding:11px 12px;border:1px solid #96815c;background:#242c2a;border-radius:12px;margin:8px 0}
+  .century-progress-area[hidden]{display:none}
+  .century-progress-area progress{width:100%;height:15px;accent-color:#e6c780;display:block;margin:8px 0}
+  .century-progress-area .century-progress-text{font-size:13px;font-weight:750;color:#fff0c2;line-height:1.65}
+  .century-progress-area button{min-height:44px;padding:9px 12px;margin-top:5px;border:1px solid #a18c71;border-radius:9px;background:#483b35;color:#ffdfc0;font-size:13px;font-weight:750;touch-action:manipulation}
   .epoch-note{color:#a9c5b3;font-size:11px;line-height:1.6;margin:7px 0}
   .planet-population{border:1px solid #4a685e;background:linear-gradient(130deg,#1d3331,#122b34);border-radius:13px;padding:12px;margin-top:10px}
   .planet-population strong{color:#ffe3ad;font-size:13px}
@@ -413,6 +419,11 @@
         <div class="sect-title" style="margin-top:14px">🗓️ เวลาบนดาว</div>
         <div class="turn" style="flex-wrap:wrap"><button id="pause" aria-label="หยุดหรือเล่นเวลา">⏸ พัก</button><button class="chosen" data-speed="1">1×</button><button data-speed="3">3×</button><button data-speed="10">10×</button><button id="skip">⏭ 30 วัน</button><button class="epoch-button" id="skipCentury" type="button">☸️ ผ่านไป 100 ปี</button><button class="restart" id="reset">โลกใหม่</button></div>
         <div class="epoch-note">ข้าม 100 ปีเป็นการจำลองแบบสรุปรายปี ไม่ใช่การเล่นย้อนหลังทุกวัน มนุษย์อายุเพิ่มขึ้นและอาจเสียชีวิตตามกาลเวลา</div>
+        <div id="centuryProgressArea" class="century-progress-area" hidden>
+          <div id="centuryProgressText" class="century-progress-text" role="status" aria-live="polite">⏳ กำลังคำนวณเวลา...</div>
+          <progress id="centuryProgress" max="100" value="0" aria-label="ความคืบหน้าข้ามเวลา 100 ปี"></progress>
+          <button type="button" id="cancelCentury">ยกเลิกการข้ามเวลา</button>
+        </div>
         <div class="savebar"><button id="save">💾 บันทึกโลก</button><button id="load">📂 โหลดโลก</button><button id="export">⬇️ ส่งออกไฟล์</button><button id="importBtn">⬆️ นำเข้าไฟล์</button><input type="file" id="importFile" accept=".json,application/json" hidden /></div>
         <div class="save-state" id="saveState">ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้ · สามารถส่งออกเป็น JSON ได้</div>
       </section>
@@ -716,7 +727,8 @@
  const irand=(a,b)=>Math.floor(rand(a,b+1));
  const tileAt=(x,y)=>x>=0&&x<W&&y>=0&&y<H?tiles[y][x]:null;
  const living=(x,y)=>tileAt(Math.floor(x),Math.floor(y))?.type==='land';
- function pushLog(message){logs.unshift({day:state.day,message});logs.length=Math.min(logs.length,8);E('log').innerHTML=logs.map(x=>`<div class="entry"><b>วัน ${x.day}</b> · ${safeName(x.message)}</div>`).join('')}
+ function renderLogs(){E('log').innerHTML=logs.map(x=>`<div class="entry"><b>วัน ${x.day}</b> · ${safeName(x.message)}</div>`).join('')}
+ function pushLog(message){logs.unshift({day:state.day,message});logs.length=Math.min(logs.length,8);if(!state.bulk)renderLogs()}
 
  // The flat terrain is one EXPLORED SURFACE REGION, not the entire planet.
  // Expansion does not generate other player-owned planets and never deletes old tiles.
@@ -807,7 +819,7 @@
    }
    if(state.history)historyRecord('event','🏘️ ผู้คนเดินทางไปก่อตั้ง'+proposal.name+' และเปิดพื้นที่ตั้งถิ่นฐานแห่งใหม่');
    else pushLog('🏘️ มีการก่อตั้ง'+proposal.name);
-   refreshMapUI();saveWorld(true);
+   refreshMapUI();if(!state.bulk)saveWorld(true);
  }
  function homeForPerson(p){
    const district=Number.isInteger(p.district)?p.district:0;
@@ -1439,45 +1451,78 @@
  }
  // For long astronomical timescales, perform approximate annual demography
  // rather than simulating every frame of each citizen. No other-player AI is added.
- function advancePlanetCentury(years=100){
-   const d=state.demography;if(!d)return;
-   const wasPaused=state.pause;state.pause=true;
-   if(!d.macro){d.macro=true;d.population=Math.max(people.length,d.population);d.lastYear=state.year;}
-   const startingPop=d.population;
-   for(let i=0;i<years;i++){
-     state.day+=DAYS_PER_PLANET_YEAR;
-     state.ticks+=DAYS_PER_PLANET_YEAR*4;
-     state.year=Math.floor((state.day-1)/DAYS_PER_PLANET_YEAR)+1;
-     const w=state.w,p=d.population;
-     // Same learning mechanism at normal speed and during the 100-year skip.
-     for(let day=0;day<DAYS_PER_PLANET_YEAR;day++)advanceCivilizationDay();
-     w.health=clamp(w.health+(p>=1000?.042:.028),0,92);
-     autonomousSpaceProgram();
-     state.knowledge=Math.max(state.knowledge,(w.technology-4-w.education*.02)/.048);
-     if(state.history?.war&&i>=1)endHistoryWar();
-     advanceDemographicYear();
-     if((i+1)%20===0){
-       // Original characters age. Replacements represent their successors
-       // and are not additional worlds or fake human players.
-       for(const human of [...people]){
-         human.age+=20;
-         if(human.age>=87||human.health<=0||Math.random()<.11)cleanDeath(human,'death');
+ // Fast-forward in tiny chunks so mobile browsers can paint and accept taps.
+ let centuryTask=null;
+ function cancelCenturySkip(){
+   if(!centuryTask)return;
+   centuryTask.cancelled=true;
+   E('centuryProgressText').textContent='⏳ กำลังหยุดและเก็บความคืบหน้า...';
+   E('cancelCentury').disabled=true;
+ }
+ async function advancePlanetCentury(years=100){
+   if(centuryTask||!state.demography)return false;
+   const total=Math.max(1,Math.min(1000,Math.floor(years)));
+   const task={cancelled:false};centuryTask=task;
+   const priorPause=state.pause,priorBulk=state.bulk;
+   state.pause=true;state.bulk=true;
+   const d=state.demography,initialPopulation=d.population,initialYear=state.year;
+   const box=E('centuryProgressArea'),bar=E('centuryProgress'),msg=E('centuryProgressText'),
+     action=E('skipCentury'),stop=E('cancelCentury');
+   box.hidden=false;action.disabled=true;stop.disabled=false;bar.max=total;bar.value=0;
+   msg.textContent='⏳ กำลังเตรียมจำลอง '+total+' ปี';
+   let completed=0,error=null;
+   try{
+     await new Promise(resolve=>requestAnimationFrame(resolve));
+     if(!d.macro){d.macro=true;d.population=Math.max(people.length,d.population);d.lastYear=state.year;}
+     while(completed<total&&!task.cancelled){
+       const to=Math.min(total,completed+2);
+       while(completed<to&&!task.cancelled){
+         state.day+=DAYS_PER_PLANET_YEAR;
+         state.ticks+=DAYS_PER_PLANET_YEAR*4;
+         state.year=Math.floor((state.day-1)/DAYS_PER_PLANET_YEAR)+1;
+         const w=state.w,p=d.population;
+         for(let day=0;day<DAYS_PER_PLANET_YEAR;day++)advanceCivilizationDay();
+         w.health=clamp(w.health+(p>=1000?.042:.028),0,92);
+         autonomousSpaceProgram();
+         state.knowledge=Math.max(state.knowledge,(w.technology-4-w.education*.02)/.048);
+         if(state.history?.war&&completed>=1)endHistoryWar();
+         advanceDemographicYear();
+         completed++;
+         if(completed%20===0){
+           for(const human of [...people]){
+             human.age+=20;
+             if(human.age>=87||human.health<=0||Math.random()<.11)cleanDeath(human,'death');
+           }
+           const wanted=Math.min(80,d.population,Math.max(8,Math.floor(5+Math.sqrt(d.population)*.7)));
+           while(people.length<wanted)spawn(16+rand(-3,3),10+rand(-2,2));
+         }
        }
-       const wanted=Math.min(80,d.population,Math.max(8,Math.floor(5+Math.sqrt(d.population)*.7)));
-       while(people.length<wanted)spawn(16+rand(-3,3),10+rand(-2,2));
+       bar.value=completed;
+       msg.textContent='⏳ ผ่านไป '+completed+' / '+total+' ปี · ประชากร '+Math.floor(d.population).toLocaleString('en-US')+' คน';
+       await new Promise(resolve=>requestAnimationFrame(resolve));
      }
+   }catch(e){error=e;}
+   finally{
+     d.lastYear=state.year;
+     try{
+       ensureWorldGrowth(true);
+       for(let i=0;i<OUTPOSTS.length;i++)maybeFoundSettlement();
+       if(state.history){
+         while(state.history.era<HISTORY_ERAS.length-1&&historyEraUnlocked(state.history.era+1))state.history.era++;
+         historyRecord('event','☸️ ผ่านไป '+completed+' ปี: ประชากร '+initialPopulation.toLocaleString('en-US')+
+           ' → '+d.population.toLocaleString('en-US')+' คน'+(task.cancelled?' (ยุติก่อนกำหนด)':''));
+       }
+     }catch(e){error=error||e;}
+     state.bulk=priorBulk;state.pause=priorPause;centuryTask=null;
+     box.hidden=true;action.disabled=false;stop.disabled=false;
+     renderLogs();
+     try{updateUI();saveWorld(true);}catch(e){error=error||e;}
+     E('saveState').textContent=error?
+       '⚠️ ข้ามเวลาไม่ครบ: '+String(error.message||error)+' · ผ่านไป '+completed+' ปี':
+       task.cancelled?'🛑 ยกเลิกแล้ว · ผ่านไป '+completed+' ปี เริ่มจากปีดาว '+initialYear+' · บันทึกแล้ว':
+       '✅ ผ่านไป '+completed+' ปีจากปีดาว '+initialYear+' · บันทึกแล้ว';
    }
-   d.lastYear=state.year;
-   ensureWorldGrowth(true);
-   for(let i=0;i<OUTPOSTS.length;i++)maybeFoundSettlement();
-   if(state.history){
-     while(state.history.era<HISTORY_ERAS.length-1&&historyEraUnlocked(state.history.era+1))state.history.era++;
-     historyRecord('event','☸️ ผ่านไป '+years+' ปี: ประชากร '+startingPop.toLocaleString('en-US')+
-       ' → '+d.population.toLocaleString('en-US')+' คน · การเปลี่ยนแปลงแบบสรุปรายปี');
-   }
-   state.pause=wasPaused;
-   updateUI();saveWorld(true);
-   E('saveState').textContent='✅ ผ่านไป '+years+' ปีแบบสรุปและบันทึกเกมแล้ว';
+   return !error&&!task.cancelled;
  }
  function updateDemographyUI(){
    const d=state.demography,format=n=>Math.floor(n).toLocaleString('en-US');
@@ -2085,6 +2130,7 @@
    if(!state.pause){acc+=delta*state.speed;while(acc>=1000){acc-=1000;tick()}}
    stepMove(delta*state.speed);
    for(let i=effects.length-1;i>=0;i--){effects[i].age+=delta/1000;if(effects[i].age>=effects[i].max)effects.splice(i,1)}
+   if(centuryTask){requestAnimationFrame(animate);return;}
    // A full 128×80 overview is thousands of tiles; render its static map at
    // 12 FPS on phones while the normal camera remains fluid at full frame rate.
    const overview=camera.zoom<.58;
@@ -2134,9 +2180,11 @@
  E('pause').addEventListener('click',()=>{state.pause=!state.pause;updateUI()});
  E('skip').addEventListener('click',()=>{state.bulk=true;for(let i=0;i<120;i++)tick();state.bulk=false;updateUI();pushLog('⏭ ผ่านไป 30 วัน · ระบบโลกและประชากรพัฒนาไปตามเวลา');saveWorld(true)});
  E('skipCentury').addEventListener('click',()=>{
-   if(!confirm('ข้าม 100 ปีแบบสรุป? มนุษย์รุ่นปัจจุบันจะมีอายุเพิ่มและอาจเสียชีวิตตามธรรมชาติ ระบบจะคำนวณประชากรทั้งดาวจากอัตราเกิด–ตาย ย้อนกลับได้จากไฟล์เซฟเก่าที่ส่งออกไว้เท่านั้น'))return;
-   advancePlanetCentury(100);
+   if(centuryTask)return;
+   if(!confirm('ข้าม 100 ปีแบบสรุป? ผู้คนมีอายุเพิ่มขึ้นและอาจเสียชีวิต สามารถยกเลิกระหว่างคำนวณ โดยระบบจะเก็บปีที่ทำเสร็จแล้ว'))return;
+   void advancePlanetCentury(100);
  });
+ E('cancelCentury').addEventListener('click',cancelCenturySkip);
 
  E('galaxyMap').addEventListener('click',e=>{const b=e.target.closest('[data-planet]');if(!b)return;E('cosmosHelp').textContent='🌍 นี่คือดาวของคุณ · ไม่มีดาว AI และยังไม่มีผู้เล่นออนไลน์อื่น';updateUI()});
  E('renamePlanet').addEventListener('click',()=>{const name=E('planetNameInput').value.trim().slice(0,25);if(!name){spaceNotice('โปรดตั้งชื่อดาวที่มีตัวอักษรอย่างน้อย 1 ตัว');return}state.cosmos.planetName=name;spaceNotice(`🌍 ตั้งชื่อดาวของคุณเป็น ${name} แล้ว`)});
