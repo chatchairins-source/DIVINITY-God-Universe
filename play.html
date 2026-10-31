@@ -466,7 +466,7 @@
    // merely because the player has not yet purchased an upgrade.
    const freshwater=clamp(state.w.water/100,0,1), ambientEnergy=clamp(state.w.energy/100,0,1);
    const waterDemand=.45+pop*.10, energyDemand=.35+pop*.062;
-   addResource('water',-waterDemand+(waterDemand+.2)*freshwater);
+   addResource('water',-waterDemand+waterDemand*(freshwater>=.25?1:Math.max(.25,freshwater/.25))+.05);
    addResource('energy',-energyDemand+energyDemand*(ambientEnergy>=.18?1:.6)+.04);
    // Production order: energy and clean water first, then farms, mines, smelters, labs.
    addResource('energy',b.solar*10);
@@ -754,8 +754,8 @@
    // Groundwater recharge and soil recovery keep a healthy ecosystem viable;
    // long droughts, heat and deforestation still degrade agriculture.
    const recharge=w.forests>24?.18:.06;
-   w.water=clamp(w.water+rain*.36+recharge-(w.temperature>34?1.10:.55)-people.length*.004,0,100);
-   w.soil=clamp(w.soil+rain*.07+(w.forests>25?.055:.01)-.13-(w.forests<20?.18:0),0,100);
+   w.water=clamp(w.water+rain*.42+recharge-(w.temperature>34?1.10:.55)-people.length*.003+Math.max(0,55-w.water)*.038,0,100);
+   w.soil=clamp(w.soil+rain*.08+(w.forests>25?.065:.01)-.14-(w.forests<20?.18:0)+Math.max(0,55-w.soil)*.026,0,100);
    if(w.weather==='พายุฝน'&&Math.random()<.14){state.food=Math.max(0,state.food-rand(6,20));w.infrastructure=clamp(w.infrastructure-2,0,100);pushLog('🌪️ พายุทำลายผลผลิตและสิ่งก่อสร้าง')}
    if(w.weather==='คลื่นความร้อน'&&Math.random()<.15)pushLog('🌡️ คลื่นความร้อนทำให้พืชต้องการน้ำมากขึ้น');
  }
@@ -819,7 +819,7 @@
    w.education=clamp(w.education+(people.length>=6?.012:0)+state.building.school*.05+(state.policy==='ลงทุนการศึกษา'?.065:0),0,100);
    w.technology=clamp(4+state.knowledge*.048+w.education*.02,0,100);
    w.infrastructure=clamp(w.infrastructure+Math.min(people.length,60)*.0015+(houses.length*.003)-(w.disaster*.003),0,100);
-   w.energy=clamp(w.energy+.012+(state.ore>1?.01:-.12)-(w.technology>65?.02:0),0,100);
+   w.energy=clamp(w.energy+.012+(w.forests>25?.012:0)+(state.ore>1?.008:-.012)-(w.technology>65?.02:0),0,100);
    const values=people.map(p=>Math.max(0,p.wealth||0)).sort((a,b)=>a-b);
    const totalWealth=values.reduce((a,b)=>a+b,0),weighted=values.reduce((sum,value,i)=>sum+(i+1)*value,0);
    const gini=totalWealth>0&&values.length>1?clamp((2*weighted)/(values.length*totalWealth)-(values.length+1)/values.length,0,1)*100:0;
@@ -829,8 +829,8 @@
    w.crime=clamp(w.crime+.008*w.inequality+.003*(100-w.economy)-.01*w.security-.06,0,100);
    w.unrest=clamp(w.unrest+.006*w.inequality+.009*w.crime-.007*w.trust-(state.policy==='ดูแลคนยากจน'?.06:0),0,100);
    w.security=clamp(w.security+.08+w.trust*.004+(state.policy==='รักษาความปลอดภัย'?.08:0)-.012*w.crime-.007*w.unrest,0,100);
-   w.conflict=clamp(w.conflict+.012*w.unrest+.008*w.inequality-.016*w.trust-.12,0,100);
-   w.trust=clamp(w.trust+.28+state.happiness*.003-.007*w.inequality-.005*w.crime-.007*w.conflict,0,100);
+   w.conflict=clamp(w.conflict+.008*w.unrest+.005*w.inequality-.018*w.trust-.17,0,100);
+   w.trust=clamp(w.trust+.34+state.happiness*.005-.004*w.inequality-.004*w.crime-.005*w.conflict,0,100);
    const infected=people.filter(p=>p.infected).length;
    w.disease=clamp(infected/Math.max(1,people.length)*100,0,100);
    if(w.conflict>72&&Math.random()<.015){state.food=Math.max(0,state.food-8);state.money=Math.max(0,state.money-6);pushLog('⚔️ การปะทะทำให้เสบียงและการค้าหยุดชะงัก')}
@@ -858,7 +858,7 @@
        }
      }else {
        const nearby=people.filter(q=>q.id!==p.id&&q.infected&&dist(q.x,q.y,p.x,p.y)<2.9).length;
-       const risk=(nearby*.055 + w.pollution*.0005)*(1-p.immune/130)*(1-w.health/170);
+       const risk=(Math.min(nearby,3)*.022 + w.pollution*.00025)*(1-p.immune/130)*(1-w.health/170);
        if(Math.random()<risk){p.infected=true;p.infectionAge=0;if(p.id===selectedPersonId)remember(p,'ล้มป่วยจากโรคที่แพร่ในชุมชน')}
      }
    }
@@ -1089,7 +1089,7 @@
    const foodRatio=state.food/Math.max(1,people.length);
    const fed=foodRatio>.65;
    const shortage=foodRatio<.65;
-   state.happiness=clamp(state.happiness+(shortage?-.22:.10)+w.security*.0009-w.conflict*.003-w.disease*.005-w.pollution*.0015-Math.max(0,people.length-houses.length*8)*.028,0,100);
+   state.happiness=clamp(state.happiness+(shortage?-.22:.10)+w.security*.0009-w.conflict*.003-w.disease*.0018-w.pollution*.0015-Math.max(0,people.length-houses.length*8)*.028,0,100);
    state.faith=clamp(state.faith+people.length*(.045+state.happiness/2200)+.1,0,MAX_FAITH);
    const all=[...people];
    for(const p of all){
