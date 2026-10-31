@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080d1c">
+<meta name="description" content="DIVINITY Galaxy จักรวาลออนไลน์ของผู้เล่นจริง ค้าขาย เจรจา และท้าประลองระหว่างดาว">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<title>DIVINITY GALAXY — จักรวาลออนไลน์</title>
+<style>
+:root{color-scheme:dark;--bg:#080d1b;--panel:#111f31;--border:#304660;--ink:#e9f5fa;--muted:#a6bfca;--gold:#ffdd9c;--blue:#79d4ee;--green:#9ce5b5}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);background:radial-gradient(ellipse at 56% 2%,#24324f,#0b1225 46%,#070c18 86%);font-family:system-ui,-apple-system,Tahoma,sans-serif;min-height:100vh}
+button,input{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+a{color:#a6e2f2;text-decoration:none}.shell{max-width:1240px;margin:auto;padding:0 17px}
+header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid #354a6488}
+.brand{font-weight:900;letter-spacing:2px;font-size:19px;color:#ffdea0}.brand span{color:#9cdbff}
+nav{display:flex;gap:9px;flex-wrap:wrap}nav a{border:1px solid #38526c;padding:9px 12px;border-radius:11px;font-size:12px;font-weight:750}
+.hero{padding:34px 0 20px}.eyebrow{letter-spacing:2px;color:#aed3db;font-size:11px;font-weight:850}
+h1{font-size:clamp(29px,5.5vw,49px);letter-spacing:-.8px;line-height:1.12;margin:10px 0 12px}h1 span{color:var(--gold)}
+p{line-height:1.7;color:var(--muted);margin:8px 0}.callout{border:1px solid #685c4a;background:#292b2f;border-radius:13px;padding:12px 16px;margin:16px 0;line-height:1.65;font-size:13px;color:#f3daa7}
+.callout.warn{border-color:#bd7658;background:#3c2c2b;color:#f8d0b8}
+.panel{background:linear-gradient(135deg,#142339,#101b2a);border:1px solid var(--border);padding:19px;border-radius:17px;margin:15px 0;box-shadow:0 14px 38px #0002}
+.panel h2{font-size:17px;margin:0 0 12px;color:var(--gold)}.sub{font-size:12px;color:var(--muted)}
+.auth-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+input{width:100%;background:#091729;border:1px solid #47708b;color:#e7f6f7;padding:12px;border-radius:10px;font-size:15px}
+.field label{display:block;font-size:12px;margin:0 0 6px;color:#b7cedb}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.btn{min-height:46px;border-radius:10px;border:1px solid #5f879c;background:#25475e;color:#e8f4f4;padding:10px 15px;font-weight:750;font-size:13px}
+.btn.primary{background:#e8bf7c;border-color:#ffe0a8;color:#172029}.btn.danger{background:#5b3037;border-color:#a65e69;color:#fbe0d7}.btn:active{transform:translateY(1px)}
+.dashboard{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(275px,.85fr);gap:16px}
+.galaxy-map{height:min(62vw,530px);min-height:330px;border-radius:14px;position:relative;overflow:hidden;background:
+radial-gradient(ellipse at 45% 51%,#44568045,#1a274232 30%,transparent 55%),
+radial-gradient(circle at 40% 55%,#4a568344,transparent 36%),
+radial-gradient(circle at 72% 28%,#4b378844,transparent 33%),
+radial-gradient(circle at 24% 78%,#1c7a8e3d,transparent 30%),
+#050c1c;border:1px solid #405578}
+.galaxy-map:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.83;background-image:
+radial-gradient(1px 1px at 12% 21%,#fff,transparent),
+radial-gradient(2px 2px at 30% 75%,#d6e9ff,transparent),
+radial-gradient(1px 1px at 53% 21%,#fff,transparent),
+radial-gradient(1px 1px at 79% 70%,#c7c6ff,transparent),
+radial-gradient(2px 2px at 91% 36%,#fff,transparent);background-size:130px 110px}
+.galaxy-map:after{content:"";position:absolute;inset:8%;border:1px solid #5c80ba22;border-radius:50%;pointer-events:none}
+.planet-pin{position:absolute;z-index:3;transform:translate(-50%,-50%);display:grid;gap:4px;justify-items:center;background:transparent;border:0;color:#eaf7fa;text-align:center;max-width:95px;padding:4px}
+.planet-pin .orb{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 25%,#c2f8dc,#51b7b6 45%,#265675 68%,#17283e);box-shadow:0 0 0 2px #95e7dd88,0 0 17px #75d6eb93}
+.planet-pin.me .orb{width:43px;height:43px;background:radial-gradient(circle at 35% 25%,#fde6a0,#8fd4b1 42%,#357f9c 72%,#14263a);box-shadow:0 0 0 2px #fbe2a1b3,0 0 25px #e4ca8c66}
+.planet-pin.selected .orb{outline:3px solid #fff5cd;outline-offset:4px}
+.planet-pin .pin-name{font-size:11px;font-weight:850;text-shadow:0 1px 8px #000;overflow-wrap:anywhere}
+.planet-pin:active{transform:translate(-50%,-50%) scale(.93)}
+.empty-map{position:absolute;top:54%;left:50%;transform:translate(-50%,-50%);text-align:center;min-width:205px;max-width:85%;color:#a8becd;font-size:13px;line-height:1.6;pointer-events:none}
+.grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.metric{background:#0d1b2d;border:1px solid #38516a;border-radius:11px;padding:12px}.metric b{font-size:20px;display:block;color:#f5dfb2}.metric small{font-size:11px;color:#b3c9d1}
+.wallet{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.wallet div{background:#0b1929;padding:10px 5px;border-radius:10px;text-align:center;border:1px solid #344d62}.wallet b{font-size:17px;display:block;color:#ffdb9c}.wallet span{font-size:10px;color:#bcd4d6}
+.list{display:grid;gap:9px;max-height:380px;overflow-y:auto}.item{border:1px solid #3d5670;border-radius:11px;background:#0e1c2b;padding:11px;line-height:1.7;font-size:12px}
+.item strong{color:#f2e1b5}.item .muted{color:#b3c6cf;font-size:11px}
+.item-buttons{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.item-buttons button{padding:7px 11px;border-radius:8px;min-height:40px;border:1px solid #52788a;background:#244657;color:#e5f6f7}
+.target{padding:12px;border-radius:11px;background:#1d3340;border:1px solid #607d88;margin-bottom:11px;font-size:13px;line-height:1.7}
+.hint{padding:12px 0 30px;color:#96b3ba;font-size:11px;line-height:1.8}
+[hidden]{display:none!important}
+@media(max-width:850px){.dashboard{grid-template-columns:1fr}.galaxy-map{height:400px}.auth-grid{grid-template-columns:1fr}}
+@media(max-width:530px){.hero{padding:23px 0 12px}.panel{padding:13px}.galaxy-map{height:360px;min-height:300px}.planet-pin .pin-name{font-size:10px}.planet-pin .orb{width:26px;height:26px}.planet-pin.me .orb{width:37px;height:37px}.wallet b{font-size:15px}}
+</style>
+</head>
+<body>
+<header class="shell"><div class="brand">✦ DIVINITY <span>GALAXY</span></div>
+<nav><a href="./">หน้าแรก</a><a href="play.html">🌍 ดาวของฉัน</a><a href="guide.html">วิธีเล่น</a></nav></header>
+<main class="shell">
+<section class="hero">
+  <div class="eyebrow">MULTIPLAYER GALAXY · REAL PLAYERS ONLY</div>
+  <h1>หนึ่งผู้เล่น <span>หนึ่งดาว</span><br>รวมกันเป็นกาแล็กซี</h1>
+  <p>Galaxy เป็นอีกหน้าหนึ่งจากเกมควบคุมดาว แสดงเฉพาะดาวของผู้เล่นที่เข้าสู่ระบบและยังออนไลน์อยู่ — เมื่อพบกันจึงส่งข้อเสนอซื้อขายหรือท้าสงครามกันได้ ไม่มีดาวคู่แข่ง AI</p>
+</section>
+<div id="alert" class="callout" role="status" aria-live="polite">กำลังตรวจการเชื่อมต่อ Galaxy...</div>
+<section class="panel" id="configHelp" hidden>
+ <h2>🔒 ยังไม่ได้เปิดเซิร์ฟเวอร์ Galaxy</h2>
+ <p>หน้า Galaxy พร้อมแล้ว แต่ต้องเชื่อมกับ <b>Supabase Project ใหม่สำหรับ DIVINITY เท่านั้น</b> ไม่ใช้ฐานข้อมูล QueueGo เมื่อเปิดระบบจริงจะสามารถสมัครบัญชี ค้าขาย และทำสงครามกับผู้เล่นที่ออนไลน์เท่านั้น</p>
+ <p>ตั้งค่าตาม <a href="GALAXY_SETUP.md">คู่มือเปิด Galaxy</a> แล้วใส่ Project URL และ Publishable key ในไฟล์ <code>galaxy-config.js</code> (ห้ามใช้ secret/service_role)</p>
+</section>
+<section id="authBox" class="panel" hidden>
+ <h2>🔐 เข้าสู่กาแล็กซี</h2>
+ <div class="auth-grid">
+  <div class="field"><label for="galEmail">อีเมลผู้เล่น</label><input id="galEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+  <div class="field"><label for="galPassword">รหัสผ่าน</label><input id="galPassword" type="password" autocomplete="current-password" minlength="8" placeholder="อย่างน้อย 8 ตัวอักษร"></div>
+  <div class="field"><label for="galName">ชื่อดาวสำหรับลงทะเบียนครั้งแรก</label><input id="galName" type="text" maxlength="32" value="ดาวรุ่งอรุณ"></div>
+ </div>
+ <div class="actions"><button class="btn primary" id="signIn">เข้าสู่ระบบ</button><button class="btn" id="signUp">สร้างบัญชี</button></div>
+ <p class="sub">กรณีสมัครใหม่ อาจต้องกดยืนยันอีเมลก่อนเข้าสู่ระบบ ตามการตั้งค่าเซิร์ฟเวอร์</p>
+</section>
+<section id="registerBox" class="panel" hidden>
+ <h2>🌍 ลงทะเบียนดาวของคุณ</h2><p>ทุกบัญชีสร้างได้เพียงหนึ่งดาวในกาแล็กซี ชื่อดาวใช้เพื่อแสดงแก่ผู้เล่นคนอื่น</p>
+ <div class="field"><label for="registerName">ชื่อดาว</label><input id="registerName" maxlength="32" value="ดาวรุ่งอรุณ"></div>
+ <div class="actions"><button class="btn primary" id="registerPlanet">จดทะเบียนดาว</button><button class="btn" id="signOut2">ออกจากระบบ</button></div>
+</section>
+<section id="dashboard" hidden>
+ <div class="dashboard">
+ <div>
+  <section class="panel">
+   <h2>🌌 แผนที่กาแล็กซีออนไลน์</h2>
+   <div class="galaxy-map" id="galaxyMap" aria-label="ดาวที่กำลังออนไลน์ตามข้อมูลจากเซิร์ฟเวอร์">
+    <div id="emptyGalaxy" class="empty-map">ยังไม่มีข้อมูลดาวของผู้เล่นออนไลน์</div>
+   </div>
+   <div class="actions"><button class="btn" id="refresh">↻ ตรวจดาวออนไลน์</button><span class="sub" id="refreshedAt">ข้อมูลออนไลน์อัปเดตเป็นระยะ</span></div>
+   <p class="sub">ดวงดาวทุกดวงมาจากบัญชีผู้เล่นจริง และถือว่าออนไลน์เมื่อมีการติดต่อเซิร์ฟเวอร์ภายใน 2 นาทีที่ผ่านมา จุดแสงเล็ก ๆ ที่เป็นพื้นหลังไม่ใช่ดาวผู้เล่น</p>
+  </section>
+  <section class="panel">
+   <h2>🪐 เลือกดาวเพื่อทำการทูต</h2>
+   <div class="target" id="targetInfo">เลือกดาวของผู้เล่นที่ออนไลน์อยู่บนแผนที่</div>
+   <div class="grid-two">
+    <div class="field"><label for="oreQty">แร่ที่เสนอขาย (1–100)</label><input id="oreQty" type="number" min="1" max="100" value="10" inputmode="numeric"></div>
+    <div class="field"><label for="tradePrice">ราคารวมเป็นเครดิต</label><input id="tradePrice" type="number" min="1" max="10000" value="100" inputmode="numeric"></div>
+   </div>
+   <div class="actions"><button class="btn primary" id="offerTrade" disabled>📦 เสนอขายแร่</button><button class="btn danger" id="offerWar" disabled>⚔️ ท้าสงคราม</button></div>
+   <p class="sub">คำสั่งจะส่งให้ผู้เล่นปลายทางยอมรับหรือปฏิเสธก่อนเสมอ สงครามไม่ได้โจมตีอัตโนมัติ และเซิร์ฟเวอร์เป็นผู้คำนวณผล</p>
+  </section>
+  <section class="panel"><h2>📦 ข้อเสนอการค้าของคุณ</h2><div id="tradeList" class="list"><div class="item">ยังไม่มีข้อเสนอ</div></div></section>
+  <section class="panel"><h2>⚔️ สงครามและคำท้าของคุณ</h2><div id="warList" class="list"><div class="item">ยังไม่มีคำท้า</div></div></section>
+ </div>
+ <aside>
+  <section class="panel">
+   <h2>👤 บัญชีและดาวของฉัน</h2><div id="myPlanet" class="target"></div>
+   <div class="actions"><button class="btn" id="logout">ออกจากระบบ</button></div>
+  </section>
+  <section class="panel">
+   <h2>💠 ทรัพยากรระหว่างดาว</h2>
+   <div class="wallet">
+    <div><b id="creditBalance">—</b><span>เครดิต</span></div>
+    <div><b id="oreBalance">—</b><span>แร่</span></div>
+    <div><b id="energyBalance">—</b><span>พลังงาน</span></div>
+   </div>
+   <div class="grid-two" style="margin-top:11px">
+    <div class="metric"><small>🚀 กองยาน</small><b id="fleetLevel">—</b></div>
+    <div class="metric"><small>🛡️ เกราะป้องกัน</small><b id="shieldLevel">—</b></div>
+   </div>
+   <div class="actions"><button class="btn" id="upgradeFleet">⬆️ กองยาน</button><button class="btn" id="upgradeShield">⬆️ เกราะป้องกัน</button></div>
+   <p class="sub">การอัปเกรดใช้เครดิต 100 × ระดับปัจจุบัน และแร่ 20 × ระดับปัจจุบัน ระดับสูงสุด 10</p>
+  </section>
+  <section class="panel"><h2>🟢 ดาวที่กำลังออนไลน์</h2><div id="playerList" class="list"></div></section>
+  <section class="panel"><h2>กติกา Galaxy</h2><p class="sub">• 1 บัญชีจริง = 1 ดาว<br>• การค้า: ผู้ขายวางแร่เป็นหลักประกัน ผู้ซื้อยืนยันชำระด้วยเครดิต<br>• สงคราม: ผู้ท้าใช้ 30 พลังงาน ผู้รับคำท้าใช้ 20 พลังงาน ผลขึ้นกับกองยาน/เกราะและการสุ่มฝั่งเซิร์ฟเวอร์<br>• ผู้เล่นสามารถปฏิเสธและไม่เสียทรัพยากร<br>• ไม่มีการสร้างคู่แข่งหรือธุรกรรมปลอม</p></section>
+ </aside>
+ </div>
+</section>
+<p class="hint">Galaxy คือระบบออนไลน์ที่แยกจากเซฟโลกใน Safari: เครดิตและแร่ใน Galaxy ถูกเซิร์ฟเวอร์ดูแล และยังไม่ใช่การซิงก์คลังทรัพยากรทั้งหมดจากเกมเล่นคนเดียว · ไม่รับชำระเงินจริง</p>
+</main>
+<script type="module">
+import { GALAXY_CONFIG } from './galaxy-config.js';
+const E = id => document.getElementById(id);
+let db = null, user = null, myPlanet = null, wallet = null, planets = [], selectedId = null, loading = false, poller = null;
+const num = n => Math.floor(Number(n)||0).toLocaleString('en-US');
+function status(message, bad=false){ const el=E('alert');el.textContent=message;el.classList.toggle('warn',bad); }
+function show(id,on){E(id).hidden=!on;}
+function errorMessage(e){return String(e&&e.message||e||'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');}
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;}
+function makeButton(label,fn){const b=el('button','',label);b.type='button';b.addEventListener('click',fn);return b;}
+function planetLabel(id){const p=planets.find(v=>v.owner_id===id);return p?p.planet_name:(id===user?.id?myPlanet?.planet_name||'ดาวของฉัน':'ดาวผู้เล่น (ออฟไลน์)');}
+function authScreen(){show('authBox',!user);show('registerBox',!!user&&!myPlanet);show('dashboard',!!myPlanet);}
+async function call(name,args={}){
+ const {data,error}=await db.rpc(name,args);if(error)throw error;return data;
+}
+async function signIn(){
+ try{
+  const email=E('galEmail').value.trim(),password=E('galPassword').value;
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error)throw error;user=data.user;await loadMyPlanet();
+  status('✅ เข้าสู่ระบบสำเร็จ');
+ }catch(e){status('⚠️ เข้าสู่ระบบไม่ได้: '+errorMessage(e),true);}
+}
+async function signUp(){
+ try{
+  const email=E('galEmail').value.trim(),password=E('galPassword').value;
+  if(password.length<8)throw Error('รหัสผ่านอย่างน้อย 8 ตัวอักษร');
+  const {data,error}=await db.auth.signUp({email,password});
+  if(error)throw error;
+  if(data.session){user=data.user;E('registerName').value=E('galName').value.trim();await loadMyPlanet();}
+  else status('📩 สมัครบัญชีแล้ว โปรดตรวจอีเมลและยืนยันก่อนเข้าสู่ระบบ');
+ }catch(e){status('⚠️ สมัครบัญชีไม่ได้: '+errorMessage(e),true);}
+}
+async function logout(){
+ if(poller){clearInterval(poller);poller=null;}
+ if(db)await db.auth.signOut();
+ user=null;myPlanet=null;wallet=null;planets=[];selectedId=null;authScreen();status('ออกจากระบบ Galaxy แล้ว');
+}
+async function loadMyPlanet(){
+ if(!user)return;
+ const {data,error}=await db.from('galaxy_planets').select('owner_id,planet_name,x,y,last_seen_at').eq('owner_id',user.id).maybeSingle();
+ if(error)throw error;
+ myPlanet=data||null;authScreen();
+ if(myPlanet){await refreshAll();if(!poller)poller=setInterval(()=>{if(!document.hidden)refreshAll().catch(e=>status('⚠️ การเชื่อมต่อขาดหาย: '+errorMessage(e),true));},25000);}
+}
+async function registerPlanet(){
+ try{
+  const name=E('registerName').value.trim();
+  if(name.length<2||name.length>32)throw Error('ชื่อดาวต้องยาว 2–32 ตัวอักษร');
+  await call('galaxy_register',{p_name:name});await loadMyPlanet();status('✅ ลงทะเบียนดาวสำเร็จ มีเพียงหนึ่งดวงต่อบัญชี');
+ }catch(e){status('⚠️ ลงทะเบียนไม่ได้: '+errorMessage(e),true);}
+}
+function drawPlanets(){
+ const map=E('galaxyMap');
+ map.querySelectorAll('.planet-pin').forEach(node=>node.remove());
+ const other=planets.filter(p=>p.owner_id!==user.id);
+ E('emptyGalaxy').hidden=planets.length>0;
+ for(const p of planets){
+  const pin=el('button','planet-pin'+(p.owner_id===user.id?' me':'')+(selectedId===p.owner_id?' selected':''));pin.type='button';
+  pin.style.left=Math.max(6,Math.min(94,p.x/10))+'%';pin.style.top=Math.max(7,Math.min(92,p.y/7))+'%';
+  pin.setAttribute('aria-label',p.planet_name+(p.owner_id===user.id?' ดาวของฉัน':' ดาวผู้เล่นที่ออนไลน์'));
+  pin.append(el('span','orb'),el('span','pin-name',p.planet_name));
+  pin.addEventListener('click',()=>selectPlanet(p.owner_id));
+  map.append(pin);
+ }
+ E('refreshedAt').textContent='ออนไลน์ '+planets.length+' ดาว (รวมของฉัน) · เช็กทุก 25 วินาที';
+ const list=E('playerList');list.replaceChildren();
+ if(!other.length)list.append(el('div','item','ยังไม่มีดาวของผู้เล่นคนอื่นออนไลน์'));
+ for(const p of other){
+  const row=el('div','item');row.append(el('strong','',p.planet_name));
+  const btn=makeButton('เลือกดาวนี้',()=>selectPlanet(p.owner_id));const buttons=el('div','item-buttons');buttons.append(btn);row.append(buttons);list.append(row);
+ }
+}
+function selectPlanet(id){
+ const p=planets.find(v=>v.owner_id===id);selectedId=p&&id!==user.id?id:null;
+ E('targetInfo').textContent=selectedId?'🟢 '+p.planet_name+' · ผู้เล่นออนไลน์ · เลือกค้าขายหรือท้าสงคราม':
+  'เลือกดาวของผู้เล่นอื่นที่ออนไลน์อยู่บนแผนที่';
+ E('offerTrade').disabled=!selectedId;E('offerWar').disabled=!selectedId;drawPlanets();
+}
+function showWallet(){
+ E('myPlanet').textContent='🌍 '+myPlanet.planet_name+' · '+user.email;
+ E('creditBalance').textContent=num(wallet?.credits);E('oreBalance').textContent=num(wallet?.ore);E('energyBalance').textContent=num(wallet?.energy);
+ E('fleetLevel').textContent='Lv.'+num(wallet?.fleet_level);E('shieldLevel').textContent='Lv.'+num(wallet?.shield_level);
+}
+function renderTrades(rows){
+ const root=E('tradeList');root.replaceChildren();
+ if(!rows.length){root.append(el('div','item','ยังไม่มีข้อเสนอการค้า'));return;}
+ for(const t of rows){
+  const mine=t.seller_id===user.id,recipient=t.buyer_id===user.id;
+  const div=el('div','item');
+  div.append(el('strong','',mine?'📤 เสนอขายให้ '+planetLabel(t.buyer_id):'📥 '+planetLabel(t.seller_id)+' เสนอขาย'));
+  div.append(el('div','',num(t.ore_amount)+' แร่ → '+num(t.credit_price)+' เครดิต'));
+  div.append(el('div','muted','สถานะ '+t.status+' · '+new Date(t.created_at).toLocaleString('th-TH')));
+  if(t.status==='pending'){
+   const b=el('div','item-buttons');
+   if(recipient)b.append(makeButton('✅ ยอมรับ',()=>respondTrade(t.id,true)));
+   b.append(makeButton(mine?'ยกเลิก':'ปฏิเสธ',()=>respondTrade(t.id,false)));
+   div.append(b);
+  }root.append(div);
+ }
+}
+function renderWars(rows){
+ const root=E('warList');root.replaceChildren();
+ if(!rows.length){root.append(el('div','item','ยังไม่มีคำท้าสงคราม'));return;}
+ for(const war of rows){
+  const mine=war.attacker_id===user.id,recipient=war.defender_id===user.id;
+  const div=el('div','item');
+  div.append(el('strong','',mine?'⚔️ ท้าสงคราม '+planetLabel(war.defender_id):'🛡️ ถูกท้าสงครามจาก '+planetLabel(war.attacker_id)));
+  let result='สถานะ '+war.status;
+  if(war.winner_id)result+=' · ผู้ชนะ '+planetLabel(war.winner_id)+' · คะแนน '+num(war.attacker_power)+' : '+num(war.defender_power);
+  div.append(el('div','muted',result+' · '+new Date(war.created_at).toLocaleString('th-TH')));
+  if(war.status==='pending'){
+   const b=el('div','item-buttons');
+   if(recipient)b.append(makeButton('⚔️ รับคำท้า',()=>respondWar(war.id,true)));
+   b.append(makeButton(mine?'ถอนคำท้า':'ปฏิเสธ',()=>respondWar(war.id,false)));
+   div.append(b);
+  }root.append(div);
+ }
+}
+async function refreshAll(){
+ if(!user||!myPlanet||loading)return;
+ loading=true;
+ try{
+  await call('galaxy_heartbeat');
+  const cutoff=new Date(Date.now()-120000).toISOString();
+  const [online,walletResult,tradesResult,warsResult]=await Promise.all([
+   db.from('galaxy_planets').select('owner_id,planet_name,x,y,last_seen_at').gte('last_seen_at',cutoff).order('created_at',{ascending:true}),
+   db.from('galaxy_wallets').select('credits,ore,energy,fleet_level,shield_level').eq('owner_id',user.id).single(),
+   db.from('galaxy_trades').select('*').or('seller_id.eq.'+user.id+',buyer_id.eq.'+user.id).order('created_at',{ascending:false}).limit(30),
+   db.from('galaxy_wars').select('*').or('attacker_id.eq.'+user.id+',defender_id.eq.'+user.id).order('created_at',{ascending:false}).limit(30)
+  ]);
+  for(const r of [online,walletResult,tradesResult,warsResult])if(r.error)throw r.error;
+  planets=online.data||[];wallet=walletResult.data||null;
+  if(selectedId&&!planets.find(p=>p.owner_id===selectedId))selectedId=null;
+  drawPlanets();
+  const chosen=planets.find(p=>p.owner_id===selectedId);
+  E('targetInfo').textContent=chosen?'🟢 '+chosen.planet_name+' · ผู้เล่นออนไลน์':'เลือกดาวของผู้เล่นที่ออนไลน์อยู่';
+  E('offerTrade').disabled=!chosen;E('offerWar').disabled=!chosen;
+  showWallet();renderTrades(tradesResult.data||[]);renderWars(warsResult.data||[]);
+ }finally{loading=false;}
+}
+async function run(label,fn){
+ try{status('⏳ '+label);await fn();await refreshAll();status('✅ '+label+' สำเร็จ');}
+ catch(e){status('⚠️ '+label+': '+errorMessage(e),true);}
+}
+function offerTrade(){
+ const q=Number(E('oreQty').value),price=Number(E('tradePrice').value);
+ if(!selectedId)return;
+ if(!Number.isInteger(q)||q<1||q>100||!Number.isInteger(price)||price<1||price>10000){status('ระบุจำนวนแร่ 1–100 และราคา 1–10,000',true);return;}
+ run('ส่งข้อเสนอการค้า',()=>call('galaxy_create_trade',{p_buyer:selectedId,p_ore:q,p_credits:price}));
+}
+function offerWar(){
+ if(!selectedId||!confirm('ท้าสงครามกับดาวนี้? จะกันพลังงานคุณไว้ 30 หน่วยจนกว่าคู่แข่งตอบรับ ปฏิเสธ หรือคุณยกเลิก'))return;
+ run('ส่งคำท้าสงคราม',()=>call('galaxy_create_war',{p_defender:selectedId}));
+}
+function respondTrade(id,accept){run('ตอบข้อเสนอการค้า',()=>call('galaxy_respond_trade',{p_id:id,p_accept:accept}));}
+function respondWar(id,accept){
+ if(accept&&!confirm('รับคำท้าสงคราม? ต้องใช้พลังงาน 20 หน่วย ผลแพ้ชนะคำนวณบนเซิร์ฟเวอร์'))return;
+ run('ตอบคำท้าสงคราม',()=>call('galaxy_respond_war',{p_id:id,p_accept:accept}));
+}
+function upgrade(kind){run('อัปเกรด '+kind,()=>call('galaxy_upgrade',{p_kind:kind}));}
+E('signIn').addEventListener('click',signIn);E('signUp').addEventListener('click',signUp);
+E('registerPlanet').addEventListener('click',registerPlanet);
+E('logout').addEventListener('click',logout);E('signOut2').addEventListener('click',logout);
+E('refresh').addEventListener('click',()=>run('ตรวจดาวออนไลน์',async()=>{}));
+E('offerTrade').addEventListener('click',offerTrade);E('offerWar').addEventListener('click',offerWar);
+E('upgradeFleet').addEventListener('click',()=>upgrade('fleet'));
+E('upgradeShield').addEventListener('click',()=>upgrade('shield'));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&myPlanet)refreshAll().catch(e=>status('⚠️ '+errorMessage(e),true));});
+async function boot(){
+ const config=GALAXY_CONFIG||{};
+ if(!config.supabaseUrl||!config.publishableKey){
+  show('configHelp',true);
+  status('🔒 Galaxy ยังไม่ได้เชื่อมต่อฐานข้อมูลผู้เล่นจริง จึงยังไม่เปิดระบบค้าขายหรือสงคราม');
+  return;
+ }
+ try{
+  const lib=await import('https://esm.sh/@supabase/supabase-js@2.49.1');
+  db=lib.createClient(config.supabaseUrl,config.publishableKey,{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+  const result=await db.auth.getSession();
+  if(result.error)throw result.error;
+  if(result.data?.session?.user){user=result.data.session.user;await loadMyPlanet();}
+  else authScreen();
+  status(user?'🟢 เชื่อมต่อ Galaxy แล้ว · เข้าสู่ระบบผู้เล่นจริง':'🟢 เซิร์ฟเวอร์ Galaxy พร้อม · เข้าสู่ระบบเพื่อดูดาวออนไลน์');
+ }catch(e){status('⚠️ Galaxy เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: '+errorMessage(e),true);}
+}
+boot();
+</script>
+</body>
+</html>
