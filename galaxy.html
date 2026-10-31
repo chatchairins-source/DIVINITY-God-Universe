@@ -132,7 +132,7 @@ radial-gradient(2px 2px at 91% 36%,#fff,transparent);background-size:130px 110px
     <div class="metric"><small>🚀 กองยาน</small><b id="fleetLevel">—</b></div>
     <div class="metric"><small>🛡️ เกราะป้องกัน</small><b id="shieldLevel">—</b></div>
    </div>
-   <div class="actions"><button class="btn" id="upgradeFleet">⬆️ กองยาน</button><button class="btn" id="upgradeShield">⬆️ เกราะป้องกัน</button></div>
+   <div class="actions"><button class="btn" id="upgradeFleet">⬆️ กองยาน</button><button class="btn" id="upgradeShield">⬆️ เกราะป้องกัน</button><button class="btn" id="refuel">⚡ เติมพลังงาน (+50 / 30 เครดิต)</button></div>
    <p class="sub">การอัปเกรดใช้เครดิต 100 × ระดับปัจจุบัน และแร่ 20 × ระดับปัจจุบัน ระดับสูงสุด 10</p>
   </section>
   <section class="panel"><h2>🟢 ดาวที่กำลังออนไลน์</h2><div id="playerList" class="list"></div></section>
@@ -303,6 +303,7 @@ function respondWar(id,accept){
  run('ตอบคำท้าสงคราม',()=>call('galaxy_respond_war',{p_id:id,p_accept:accept}));
 }
 function upgrade(kind){run('อัปเกรด '+kind,()=>call('galaxy_upgrade',{p_kind:kind}));}
+function refuel(){run('เติมพลังงาน',()=>call('galaxy_refuel'));}
 E('signIn').addEventListener('click',signIn);E('signUp').addEventListener('click',signUp);
 E('registerPlanet').addEventListener('click',registerPlanet);
 E('logout').addEventListener('click',logout);E('signOut2').addEventListener('click',logout);
@@ -310,6 +311,7 @@ E('refresh').addEventListener('click',()=>run('ตรวจดาวออนไ
 E('offerTrade').addEventListener('click',offerTrade);E('offerWar').addEventListener('click',offerWar);
 E('upgradeFleet').addEventListener('click',()=>upgrade('fleet'));
 E('upgradeShield').addEventListener('click',()=>upgrade('shield'));
+E('refuel').addEventListener('click',refuel);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&myPlanet)refreshAll().catch(e=>status('⚠️ '+errorMessage(e),true));});
 async function boot(){
  const config=GALAXY_CONFIG||{};
