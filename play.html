@@ -29,7 +29,18 @@
   .world-label{pointer-events:none;position:absolute;bottom:12px;left:12px;background:#0a141ac9;border:1px solid #ffffff35;border-radius:10px;padding:8px 11px;font-size:12px;color:#ecf5e7;backdrop-filter:blur(8px)}
   .hint{padding:12px 17px;color:#b9cbc4;font-size:12px;line-height:1.6;border-top:1px solid #2f4946}
   .panel{padding:17px;display:grid;gap:18px}.sect-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#9ebbb1;margin-bottom:10px;font-weight:750}
-  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.stat{padding:10px 11px;background:#0b181c9c;border:1px solid #314642;border-radius:12px}.stat .label{font-size:12px;color:#a2bcb2}.stat .number{margin-top:5px;font-size:23px;font-weight:760;font-variant-numeric:tabular-nums}.stat .unit{font-size:11px;color:#adc3bc;margin-left:3px;font-weight:400}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+  .planet-population{border:1px solid #4a685e;background:linear-gradient(130deg,#1d3331,#122b34);border-radius:13px;padding:12px;margin-top:10px}
+  .planet-population strong{color:#ffe3ad;font-size:13px}
+  .planet-population .planet-pop-total{font-size:clamp(24px,4vw,31px);font-weight:850;letter-spacing:.3px;color:#f0f5ed;overflow-wrap:anywhere}
+  .planet-population .pop-description{font-size:11px;color:#b9d4cc;line-height:1.65}
+  .planet-pop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+  .planet-pop-grid>div{background:#122227;border-radius:9px;border:1px solid #3b534d;padding:8px;font-size:11px;color:#b5cfc4}
+  .planet-pop-grid b{display:block;font-size:15px;color:#eddaa9}
+  .pop-regions{font-size:11px;color:#d2dfd5;margin:9px 0 0;line-height:1.65}
+  .pop-region{display:flex;justify-content:space-between;gap:9px;border-bottom:1px solid #3b504a;padding:4px 0}
+  .pop-guide{font-size:10px;color:#9dbdb4;line-height:1.6;margin-top:8px}
+.stat{padding:10px 11px;background:#0b181c9c;border:1px solid #314642;border-radius:12px}.stat .label{font-size:12px;color:#a2bcb2}.stat .number{margin-top:5px;font-size:23px;font-weight:760;font-variant-numeric:tabular-nums}.stat .unit{font-size:11px;color:#adc3bc;margin-left:3px;font-weight:400}
   .faithbar{height:7px;background:#33413c;border-radius:20px;overflow:hidden;margin-top:9px}.faithbar>div{width:40%;height:100%;border-radius:20px;background:linear-gradient(90deg,#e3ad5f,#ffecb7);transition:width .3s}
   .powers{display:grid;grid-template-columns:1fr 1fr;gap:9px}.power{display:flex;align-items:center;gap:9px;text-align:left;border:1px solid #39524d;background:#1a3030;border-radius:12px;min-height:64px;padding:9px 8px;color:var(--text);transition:.15s}.power .ico{font-size:25px;min-width:32px;text-align:center}.power .name{font-size:13px;font-weight:700}.power .cost{display:block;color:#9cb6af;font-size:11px;margin-top:3px}.power:hover{border-color:#9ad1af;background:#26413b}.power.active{background:#314f40;border-color:#f1d28d;box-shadow:inset 0 0 0 1px #f1d28d45}.power:disabled{opacity:.45;cursor:not-allowed}
   .turn{display:flex;gap:7px;align-items:center}.turn button,.restart{border:1px solid #40544f;border-radius:10px;background:#1e3333;color:#e4eee7;padding:9px 11px}.turn button.chosen{background:#d7b773;color:#17221e;border-color:#f6d991;font-weight:800}.restart{margin-left:auto;font-size:12px}.restart:hover{background:#3e3531}
@@ -248,10 +259,23 @@
       <section>
         <div class="sect-title">สถานะของโลก</div>
         <div class="stats">
-          <div class="stat"><div class="label">👥 ประชากร</div><div class="number" id="population">8</div></div>
-          <div class="stat"><div class="label">🌾 เสบียง</div><div class="number" id="food">75</div></div>
+          <div class="stat"><div class="label">👥 ประชากรทั้งดาว</div><div class="number" id="population">8</div></div>
+          <div class="stat"><div class="label">🌾 เสบียงชุมชน</div><div class="number" id="food">75</div></div>
           <div class="stat"><div class="label">❤️ ความสุข</div><div class="number" id="happiness">74<span class="unit">%</span></div></div>
           <div class="stat"><div class="label">✨ ศรัทธา</div><div class="number" id="faith">100<span class="unit">/ 250</span></div><div class="faithbar"><div id="faithFill"></div></div></div>
+        </div>
+        <div class="planet-population">
+          <strong>🌎 ระบบประชากรทั้งดาว</strong>
+          <div class="planet-pop-total" id="planetPopulation">8</div>
+          <div id="demographyMode" class="pop-description">เริ่มต้นจากชุมชนผู้บุกเบิก</div>
+          <div class="planet-pop-grid">
+            <div>👤 คนที่จำลองรายตัว<b id="agentPopulation">8</b></div>
+            <div>🌾 ความมั่นคงอาหาร<b id="planetFoodSecurity">—</b></div>
+            <div>👶 เกิดในปีล่าสุด<b id="annualBirths">0</b></div>
+            <div>🕯️ เสียชีวิตในปีล่าสุด<b id="annualDeaths">0</b></div>
+          </div>
+          <div class="pop-regions" id="demographicRegions"></div>
+          <div class="pop-guide">ประชากรทั้งดาวใช้แบบจำลองประชากรระดับภูมิภาคเมื่อเติบโตเกินขนาดชุมชน ตัวละครที่แสดงเป็นประชากรตัวอย่าง ไม่ใช่ทุกคนบนดาว · ยังไม่มีผู้เล่น AI หรือดาวปลอม</div>
         </div>
       </section>
 
@@ -849,7 +873,7 @@
  }
  function reset(){
    state={day:1,ticks:0,faith:100,food:75,happiness:74,pause:false,speed:1,stage:0,construction:0,knowledge:0,bulk:false,year:1,season:0,weather:'แดดอ่อน',wood:45,stone:26,ore:12,money:95,price:1,policy:'ชุมชนพึ่งพากัน',policies:0,building:{school:0,clinic:0,market:0},tech:[],w:{temperature:27,water:76,soil:78,forests:72,biodiversity:83,pollution:7,emissions:4,disease:1,health:74,education:18,inequality:26,crime:7,unrest:6,security:78,economy:45,technology:4,infrastructure:20,energy:45,trust:65,disaster:0,conflict:4,weather:'แดดอ่อน',wildlife:76},autosaveAt:0};
-   state.cosmos=defaultCosmos();state.economy=defaultEconomy();state.store=defaultStore();state.history=defaultHistory();
+   state.cosmos=defaultCosmos();state.economy=defaultEconomy();state.store=defaultStore();state.history=defaultHistory();state.demography=defaultDemography();
    state.settlements=[{id:0,name:'ชุมชนแรกเริ่ม',x:16,y:10}];W=64;H=40;camera.zoom=.72;camera.x=0;camera.y=0;
    people=[];nextPersonId=1;selectedPersonId=null;houses=[{x:16,y:9},{x:18,y:10},{x:15,y:11}];effects=[];logs=[];hover=null;makeMap();
    for(let i=0;i<8;i++)spawn(16+rand(-2,2),10+rand(-1.6,1.6));
@@ -1224,6 +1248,128 @@
        '<div class="history-record">ผู้คนกำลังสร้างประวัติศาสตร์ของตนเอง</div>';
    }
  }
+
+ // The planetary census must never be the number of animated sprites.
+ // At village scale individuals are modeled directly. Beyond that, regional
+ // demographic totals are modeled as cohorts, not billions of browser objects.
+ const MACRO_THRESHOLD=120,MAX_PLANET_POP=12000000000;
+ const MACRO_REGIONS=[
+   ['ชุมชนต้นกำเนิด',0],
+   ['ภูมิภาคที่ราบและลุ่มน้ำ',1200],
+   ['ภูมิภาคตะวันออก',30000],
+   ['ภูมิภาคเหนือ',2000000],
+   ['ภูมิภาคใต้',100000000],
+   ['ภูมิภาคชายฝั่ง',1200000000]
+ ];
+ const defaultDemography=()=>({population:8,macro:false,lastYear:1,annualBirths:0,
+   annualDeaths:0,totalBirths:0,totalDeaths:0,foodSecurity:75,capacity:1000,
+   regions:[{name:MACRO_REGIONS[0][0],population:8}]});
+ function ensureDemography(){
+   const saved=state.demography&&typeof state.demography==='object'?state.demography:{};
+   const base=defaultDemography();
+   const safe=(n,def=0)=>Number.isFinite(Number(n))?clamp(Math.floor(Number(n)),0,MAX_PLANET_POP):def;
+   const initial=Math.max(people.length,safe(saved.population,people.length));
+   state.demography={...base,
+     macro:saved.macro===true||initial>=MACRO_THRESHOLD,
+     population:initial,
+     lastYear:Math.min(state.year||1,safe(saved.lastYear,state.year||1)),
+     annualBirths:safe(saved.annualBirths),annualDeaths:safe(saved.annualDeaths),
+     totalBirths:safe(saved.totalBirths),totalDeaths:safe(saved.totalDeaths),
+     foodSecurity:clamp(Number(saved.foodSecurity??75),0,100),
+     capacity:safe(saved.capacity,1000),regions:[]};
+   distributePopulation();
+ }
+ function foodSecurityIndex(){
+   const w=state.w,tech=w.technology,farmland=state.economy?.buildings?.farm||0;
+   const agriculturalTech=clamp(tech*.22+w.infrastructure*.12+farmland*.36,0,27);
+   return clamp(w.soil*.36+w.water*.32+w.biodiversity*.12+agriculturalTech+
+      (state.history?.war?-12:0)-(w.pollution>65?9:0),0,100);
+ }
+ function populationCapacity(){
+   const w=state.w;
+   // A simplified carrying capacity: fertile environments and accumulated
+   // technology can support many more settlements than the visible local map.
+   const ecosystem=clamp((w.water*.42+w.soil*.43+w.biodiversity*.15)/65,.25,1.2);
+   const productivity=300*Math.pow(1.26,clamp(w.technology,0,100));
+   return Math.max(350,Math.min(MAX_PLANET_POP,Math.round(productivity*ecosystem)));
+ }
+ function distributePopulation(){
+   const d=state.demography;if(!d)return;
+   const allowed=MACRO_REGIONS.filter(([,threshold])=>d.population>=threshold);
+   if(!allowed.length)allowed.push(MACRO_REGIONS[0]);
+   // Regional totals always add up exactly to the world count, independent
+   // of how many individual agents are currently visible in the viewport.
+   const weights=allowed.map((_,i)=>Math.pow(.78,i));
+   const total=weights.reduce((a,b)=>a+b,0);let assigned=0;
+   d.regions=allowed.map(([name],i)=>{const v=i===allowed.length-1?d.population-assigned:
+     Math.floor(d.population*weights[i]/total);assigned+=v;return {name,population:v}});
+ }
+ function syncLocalPopulation(){
+   const d=state.demography;if(!d)return;
+   if(!d.macro){
+     d.population=people.length;
+     if(people.length>=MACRO_THRESHOLD){
+       d.macro=true;d.lastYear=state.year;
+       pushLog('🌎 ชุมชนเติบโตจนเริ่มใช้ระบบนับประชากรระดับดาว ไม่จำเป็นต้องวาดมนุษย์ทุกคน');
+     }
+   }else d.population=Math.max(people.length,d.population);
+   if(state.ticks%4===0)distributePopulation();
+ }
+ function advanceDemographicYear(){
+   const d=state.demography,w=state.w;
+   d.foodSecurity=foodSecurityIndex();d.capacity=populationCapacity();
+   if(!d.macro)return;
+   const p=d.population,security=d.foodSecurity;
+   // Annual probabilities, with fewer births in better educated societies.
+   // Mortality increases in outbreaks, warfare and hunger, and falls when
+   // sanitation and medical knowledge improve. Not a real-world forecast.
+   const birthRate=clamp(.041-w.education*.00014-w.technology*.00008+
+     (state.happiness-50)*.000055,.010,.045);
+   const deathRate=clamp(.027-w.health*.00016-w.technology*.000045+
+     w.disease*.00017+Math.max(0,45-security)*.00036+
+     (state.history?.war?.days? .003:0),.006,.07);
+   const crowded=Math.max(0,p/Math.max(1,d.capacity)-.80);
+   const resourcePressure=clamp(crowded*.075,0,.08);
+   const born=Math.round(p*birthRate);
+   const died=Math.round(p*Math.min(.11,deathRate+resourcePressure));
+   d.population=clamp(p+born-died,0,MAX_PLANET_POP);
+   d.annualBirths=born;d.annualDeaths=died;
+   d.totalBirths=clamp(d.totalBirths+born,0,MAX_PLANET_POP);
+   d.totalDeaths=clamp(d.totalDeaths+died,0,MAX_PLANET_POP);
+   distributePopulation();
+   if((d.population>=1000000&&p<1000000)||(d.population>=1000000000&&p<1000000000)||
+       (d.population>=7000000000&&p<7000000000)){
+     pushLog('🌍 อารยธรรมมีประชากร '+d.population.toLocaleString('en-US')+' คน');
+   }
+ }
+ function demographicTick(){
+   if(state.ticks%4!==0)return;
+   const d=state.demography;
+   syncLocalPopulation();
+   if(state.year>d.lastYear){
+     const years=Math.min(1000,state.year-d.lastYear);
+     for(let i=0;i<years;i++)advanceDemographicYear();
+     d.lastYear=state.year;
+   }else if(!d.macro){d.foodSecurity=foodSecurityIndex();d.capacity=populationCapacity();}
+ }
+ function updateDemographyUI(){
+   const d=state.demography,format=n=>Math.floor(n).toLocaleString('en-US');
+   E('population').textContent=format(d.population);
+   E('planetPopulation').textContent=format(d.population)+' คน';
+   E('agentPopulation').textContent=format(people.length)+' / '+POP_CAP;
+   E('planetFoodSecurity').textContent=Math.round(d.foodSecurity)+'%';
+   E('annualBirths').textContent=format(d.annualBirths);
+   E('annualDeaths').textContent=format(d.annualDeaths);
+   E('demographyMode').textContent=d.macro?
+     'ประชากรทั้งดาว: แบบจำลองรายปีตามอาหาร สุขภาพ การศึกษา และเทคโนโลยี · ตัวละครที่แสดงคือกลุ่มตัวอย่าง':
+     'ระยะเริ่มต้น: นับประชากรจากบุคคลที่ใช้ชีวิตอยู่จริงในชุมชน';
+   const list=E('demographicRegions'),signature=d.regions.map(r=>r.name+':'+r.population).join('|');
+   if(list.dataset.snapshot!==signature){
+     list.dataset.snapshot=signature;
+     list.innerHTML=d.regions.map(r=>
+       '<div class="pop-region"><span>'+safeName(r.name)+'</span><b>'+format(r.population)+'</b></div>').join('');
+   }
+ }
  function saveWorld(silent=false){
    try{const data={version:SAVE_VERSION,date:Date.now(),state:{...state,bulk:false},people,tiles,houses,nextPersonId,selectedPersonId,logs};
      localStorage.setItem(SAVE_KEY,JSON.stringify(data));if(!silent)E('saveState').textContent='✅ บันทึกโลกในเบราว์เซอร์แล้ว';return true}
@@ -1241,6 +1387,7 @@
    ensureSettlements();ensureWorldGrowth(true);camera.zoom=.72;focusMap(16,10);nextPersonId=data.nextPersonId||Math.max(0,...people.map(p=>p.id))+1;
    selectedPersonId=data.selectedPersonId||null;logs=(data.logs||[]).slice(0,8);effects=[];acc=0;hover=null;last=0;
    if(!chosenPerson())selectedPersonId=null;
+   ensureDemography();
    // Old saves had no district field; continue playing without resetting citizens.
    for(const p of people)if(!Number.isInteger(p.district)||p.district>=state.settlements.length)p.district=0;
    E('log').innerHTML=logs.map(x=>`<div class="entry"><b>วัน ${x.day}</b> · ${safeName(x.message)}</div>`).join('');
@@ -1248,7 +1395,7 @@
  }
 
  function updateUI(){
-   E('population').textContent=people.length;
+   updateDemographyUI();
    E('food').textContent=Math.floor(state.food);
    E('happiness').innerHTML=`${Math.round(state.happiness)}<span class="unit">%</span>`;
    E('faith').innerHTML=`${Math.floor(state.faith)}<span class="unit">/ ${MAX_FAITH}</span>`;
@@ -1498,6 +1645,7 @@
        pushLog(text)}
    }
    historyTick();
+   demographicTick();
    if(state.ticks%24===0&&!state.bulk)saveWorld(true);
    if(!state.bulk)updateUI();
  }
