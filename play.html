@@ -461,7 +461,13 @@
    const eco=state.economy,b=eco.buildings,before={};for(const k of Object.keys(RESOURCES))before[k]=resourceAmount(k);
    // Household consumption and power drain; water shortages harm health and farming.
    const pop=people.length;
-   addResource('water',-(1+pop*.22));addResource('energy',-(1+pop*.14));
+   // Families draw basic supplies from their local environment; pumps and solar
+   // add industrial capacity. A healthy planet should not empty both reserves
+   // merely because the player has not yet purchased an upgrade.
+   const freshwater=clamp(state.w.water/100,0,1), ambientEnergy=clamp(state.w.energy/100,0,1);
+   const waterDemand=.45+pop*.10, energyDemand=.35+pop*.062;
+   addResource('water',-waterDemand+(waterDemand+.2)*freshwater);
+   addResource('energy',-energyDemand+(energyDemand+.1)*(.6+.4*ambientEnergy));
    // Production order: energy and clean water first, then farms, mines, smelters, labs.
    addResource('energy',b.solar*10);
    for(let i=0;i<b.pump;i++){if(resourceAmount('energy')>=1){addResource('energy',-1);addResource('water',7)}}
@@ -745,8 +751,11 @@
    else if(r>.94)w.weather='ลมแรง';
    else w.weather='แดดอ่อน';
    const rain=w.weather==='ฝนตก'?3:w.weather==='พายุฝน'?6:0;
-   w.water=clamp(w.water+rain*.43-(w.temperature>34?1.5:.4)-people.length*.008,0,100);
-   w.soil=clamp(w.soil+rain*.11-.19-(w.forests<30?.25:0),0,100);
+   // Groundwater recharge and soil recovery keep a healthy ecosystem viable;
+   // long droughts, heat and deforestation still degrade agriculture.
+   const recharge=w.forests>24?.24:.07;
+   w.water=clamp(w.water+rain*.48+recharge-(w.temperature>34?1.05:.25)-people.length*.004,0,100);
+   w.soil=clamp(w.soil+rain*.13+(w.forests>25?.09:.02)-.11-(w.forests<20?.18:0),0,100);
    if(w.weather==='พายุฝน'&&Math.random()<.14){state.food=Math.max(0,state.food-rand(6,20));w.infrastructure=clamp(w.infrastructure-2,0,100);pushLog('🌪️ พายุทำลายผลผลิตและสิ่งก่อสร้าง')}
    if(w.weather==='คลื่นความร้อน'&&Math.random()<.15)pushLog('🌡️ คลื่นความร้อนทำให้พืชต้องการน้ำมากขึ้น');
  }
@@ -836,7 +845,7 @@
  function personalWorldTick(p){
    const w=state.w;
    if(state.ticks%192===0)p.age++;
-   if(p.age>62)p.health=clamp(p.health-(p.age-62)*.006,0,100);
+   if(p.age>68)p.health=clamp(p.health-(p.age-68)*.004,0,100);
    if(w.water<35)p.health=clamp(p.health-.06,0,100);
    if(w.pollution>52)p.health=clamp(p.health-.08,0,100);
    if(w.temperature>37||w.temperature<8)p.energy=clamp(p.energy-.55,0,100);
@@ -862,17 +871,17 @@
    const adults=people.filter(p=>p.age>=18&&p.age<=54&&!p.partnerId);
    for(const p of adults){
      const potential=adults.filter(q=>q.id!==p.id&&!q.partnerId&&dist(p.x,p.y,q.x,q.y)<8 && ((p.relations[q.id]||24)+(q.relations[p.id]||24)+(p.worldview===q.worldview?12:0)+p.social*.2+q.social*.12)>68);
-     if(!potential.length||Math.random()>.06)continue;
+     if(!potential.length||Math.random()>.09)continue;
      const q=potential.sort((a,b)=>(p.relations[b.id]||0)-(p.relations[a.id]||0))[0];
      if((q.relations[p.id]||24)+q.social*.22+(p.worldview===q.worldview?12:0)<33||Math.random()>.7)continue;
      p.partnerId=q.id;q.partnerId=p.id;remember(p,`เริ่มใช้ชีวิตคู่กับ ${q.name}`);remember(q,`เริ่มใช้ชีวิตคู่กับ ${p.name}`);
      pushLog(`💞 ${p.name} และ ${q.name} ตัดสินใจใช้ชีวิตคู่ด้วยกัน`);
    }
-   if(people.length>=POP_CAP||state.food<people.length*2||state.w.water<20||state.happiness<48)return;
-   const couples=people.filter(p=>p.partnerId&&p.id<p.partnerId&&p.age>=19&&p.age<44&&state.ticks-p.lastBaby>160);
+   if(people.length>=POP_CAP||state.food<Math.max(4,people.length*.8)||state.w.water<15||state.happiness<42)return;
+   const couples=people.filter(p=>p.partnerId&&p.id<p.partnerId&&p.age>=19&&p.age<44&&state.ticks-p.lastBaby>136);
    if(!couples.length)return;
    const p=couples[irand(0,couples.length-1)],q=people.find(q=>q.id===p.partnerId);
-   if(!q||q.age>=50||Math.random()>.10||people.length>=houses.length*9)return;
+   if(!q||q.age>=50||Math.random()>.075||people.length>=houses.length*9)return;
    const baby=spawn((p.x+q.x)/2,(p.y+q.y)/2,true);
    baby.parentIds=[p.id,q.id];baby.group=p.group;p.children.push(baby.id);q.children.push(baby.id);p.lastBaby=state.ticks;q.lastBaby=state.ticks;
    remember(p,`มีลูกชื่อ ${baby.name}`);remember(q,`มีลูกชื่อ ${baby.name}`);pushLog(`👶 ${baby.name} เกิดจากครอบครัวของ ${p.name} และ ${q.name}`);
@@ -946,8 +955,8 @@
    const options={
      eat:p.hunger*1.5+(state.food>2?0:-120),
      rest:(100-p.energy)*1.2+(p.health<55?30:0),
-     gather:28+(scarcity?30:0)+(p.job==='ผู้เก็บอาหาร'?25:0)+p.kindness*.14,
-     farm:28+(scarcity?24:0)+(p.job==='ชาวนา'?25:0)+p.resilience*.1,
+     gather:28+(scarcity?48:0)+(p.job==='ผู้เก็บอาหาร'?25:0)+p.kindness*.14,
+     farm:28+(scarcity?44:0)+(p.job==='ชาวนา'?25:0)+p.resilience*.1,
      build:23+(crowd>houses.length*4?22:0)+(p.job==='ช่างก่อสร้าง'?27:0)+p.ambition*.15,
      help:18+(lowHealth?24:0)+(p.job==='ผู้ดูแล'?30:0)+p.kindness*.28,
      social:17+(p.mood<60?20:0)+p.social*.41,
@@ -995,7 +1004,7 @@
    const companions=people.filter(q=>q.id!==p.id&&dist(p.x,p.y,q.x,q.y)<5);
    const friend=companions.length?companions[irand(0,companions.length-1)]:null;
    switch(p.action){
-     case 'eat':{const amount=Math.min(state.food,1.8);state.food-=amount;p.hunger=clamp(p.hunger-amount*39,0,100);p.mood=clamp(p.mood+amount*1.5,0,100);break}
+     case 'eat':{const amount=Math.min(state.food,1.1);state.food-=amount;p.hunger=clamp(p.hunger-amount*48,0,100);p.mood=clamp(p.mood+amount*1.5,0,100);break}
      case 'rest':p.energy=clamp(p.energy+22,0,100);p.health=clamp(p.health+(.6+p.resilience*.015),0,100);break;
      case 'gather':{
        const harvest=Math.random()<(p.fate==='disfavored'?.15:.05)?0:rand(.9,2.8)*(p.fate==='favorite'?1.2:1)*(state.w.biodiversity/100+.2);
@@ -1041,24 +1050,33 @@
    cosmosTick();
    let trees=0,farms=0,wetFarms=0;
    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x];if(t.tree)trees++;if(t.farm){farms++;if(t.wet>0)wetFarms++}if(t.wet>0)t.wet=Math.max(0,t.wet-.05)}
-   if(state.ticks%24===0&&farms<18&&state.wood>=4&&state.food<Math.max(35,people.length*7)){
-     const candidates=[];for(let y=7;y<17;y++)for(let x=11;x<23;x++){
+   // As demand grows, people extend agriculture gradually instead of waiting
+   // for a near-empty granary. Natural crops still depend on the climate.
+   const farmTarget=Math.min(62,Math.max(6,Math.ceil(people.length*.66)+3));
+   if(state.ticks%12===0&&farms<farmTarget&&state.wood>=1.2&&(farms<people.length*.56||state.food<Math.max(35,people.length*10))){
+     const candidates=[];for(let y=3;y<H-2;y++)for(let x=9;x<W-2;x++){
        const t=tileAt(x,y);if(t?.type==='land'&&!t.farm&&!t.tree&&!houses.some(h=>h.x===x&&h.y===y))candidates.push(t);
      }
-     if(candidates.length){const t=candidates[irand(0,candidates.length-1)];t.farm=true;state.wood-=4;farms++;pushLog('🌾 ชุมชนขยายพื้นที่เกษตรเพื่อรองรับความต้องการอาหาร')}
+     if(candidates.length){const t=candidates[irand(0,candidates.length-1)];t.farm=true;state.wood-=1.2;farms++;if(state.ticks%48===0)pushLog('🌾 ชุมชนขยายพื้นที่เกษตรเพื่อรองรับความต้องการอาหาร')}
    }
    const w=state.w,temperaturePenalty=clamp(1-Math.max(0,w.temperature-34)*.075-Math.max(0,8-w.temperature)*.035,.15,1.2);
    const environment=clamp((w.water*.006+w.soil*.004+w.biodiversity*.002)*temperaturePenalty,.12,1.45);
-   const production=(.65+trees*.016+farms*1.06+wetFarms*.12)*(state.tech.includes('ชลประทาน')?1.25:1)*environment;
-   state.food=clamp(state.food*.992+production-people.length*.46,0,9999);
-   const fed=state.food>people.length*.8;
-   state.happiness=clamp(state.happiness+(fed?.12:-.75)+w.security*.0009-w.conflict*.004-w.disease*.006-w.pollution*.002-Math.max(0,people.length-houses.length*8)*.05,0,100);
+   const production=(.8+trees*.018+farms*1.10+wetFarms*.14)*(state.tech.includes('ชลประทาน')?1.25:1)*environment;
+   const demand=people.length*.22;
+   state.food=clamp(state.food*.997+production-demand,0,9999);
+   const foodRatio=state.food/Math.max(1,people.length);
+   const fed=foodRatio>.65;
+   const shortage=foodRatio<.65;
+   state.happiness=clamp(state.happiness+(shortage?-.22:.10)+w.security*.0009-w.conflict*.003-w.disease*.005-w.pollution*.0015-Math.max(0,people.length-houses.length*8)*.028,0,100);
    state.faith=clamp(state.faith+people.length*(.045+state.happiness/2200)+.1,0,MAX_FAITH);
    const all=[...people];
    for(const p of all){
-     p.hunger=clamp(p.hunger+(fed?1.45:3.3)*state.price/1.65,0,100);
-     p.energy=clamp(p.energy-.8,0,100);
-     if(p.hunger>89)p.health=clamp(p.health-1.1,0,100);
+     const scarce=state.food<Math.max(1,people.length*.6);
+     p.hunger=clamp(p.hunger+(scarce?2.0:1.25)*clamp(state.price/1.65,.75,1.35),0,100);
+     p.energy=clamp(p.energy-.7,0,100);
+     // Long-term malnutrition causes illness and mortality, but cannot wipe out
+     // a settlement in only a few simulated days.
+     if(p.hunger>94&&scarce)p.health=clamp(p.health-.30,0,100);
      personalWorldTick(p);
      if(p.fate==='favorite'){
        p.health=clamp(p.health+(fed?.17:0),0,100);
@@ -1066,14 +1084,17 @@
      }else if(p.fate==='disfavored'){
        p.health=clamp(p.health-(fed?.045:.12),0,100);
        p.fortune=clamp(p.fortune-.19,0,100);p.mood=clamp(p.mood-.12,0,100);
-     }else p.health=clamp(p.health+(fed?.04:-.08),0,100);
+     }else p.health=clamp(p.health+(fed?.09:-.025),0,100);
      if(state.ticks>=p.nextDecision){decide(p);act(p);p.nextDecision=state.ticks+irand(3,5)}
    }
    if(state.ticks%4===0){
      formFamilies();
      for(const p of [...people])if(p.health<=0||p.age>=95||(p.age>72&&Math.random()<(p.age-69)*.001)){cleanDeath(p)}
-     if(people.length<5&&state.food>30&&Math.random()<.06){const m=spawn(16+rand(-3,3),10+rand(-2,2));pushLog(`🚶 ${m.name} อพยพเข้ามาตั้งถิ่นฐาน`)}
-     if(w.unrest>70&&people.length>6&&Math.random()<.07){const choices=people.filter(p=>p.age>=17&&p.fate!=='favorite');if(choices.length){const p=choices[irand(0,choices.length-1)];cleanDeath(p,'migration')}}
+     if(people.length<Math.max(6,Math.min(22,houses.length*5))&&state.food>Math.max(35,people.length*5)&&w.water>35&&state.happiness>50&&Math.random()<.022){
+       const m=spawn(16+rand(-3,3),10+rand(-2,2));
+       pushLog(`🚶 ${m.name} อพยพมาตั้งถิ่นฐานเพราะชุมชนมีโอกาสดำรงชีพ`);
+     }
+     if(w.unrest>82&&people.length>8&&Math.random()<.012){const choices=people.filter(p=>p.age>=17&&p.fate!=='favorite');if(choices.length){const p=choices[irand(0,choices.length-1)];cleanDeath(p,'migration')}}
    }
    const favoriteCount=people.filter(p=>p.fate==='favorite').length;
    const disfavoredCount=people.filter(p=>p.fate==='disfavored').length;
