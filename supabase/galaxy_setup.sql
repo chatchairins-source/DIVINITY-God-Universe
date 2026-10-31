@@ -211,11 +211,25 @@ begin
   return case when victor=item.attacker_id then 'attacker_won' else 'defender_won' end;
 end $$;
 
+create or replace function public.galaxy_refuel()
+returns integer language plpgsql security definer set search_path = ''
+as $
+declare u uuid:=auth.uid(); remaining integer;
+begin
+  if u is null then raise exception 'LOGIN_REQUIRED'; end if;
+  update public.galaxy_wallets
+    set credits=credits-30,energy=least(150,energy+50)
+    where owner_id=u and credits>=30 and energy<150
+    returning energy into remaining;
+  if not found then raise exception 'NEED_30_CREDITS_OR_ENERGY_FULL'; end if;
+  return remaining;
+end $;
+
 revoke all on function public.galaxy_register(text), public.galaxy_heartbeat(),
  public.galaxy_create_trade(uuid,integer,integer), public.galaxy_respond_trade(uuid,boolean),
- public.galaxy_upgrade(text), public.galaxy_create_war(uuid), public.galaxy_respond_war(uuid,boolean)
+ public.galaxy_upgrade(text), public.galaxy_refuel(), public.galaxy_create_war(uuid), public.galaxy_respond_war(uuid,boolean)
  from public,anon;
 grant execute on function public.galaxy_register(text), public.galaxy_heartbeat(),
  public.galaxy_create_trade(uuid,integer,integer), public.galaxy_respond_trade(uuid,boolean),
- public.galaxy_upgrade(text), public.galaxy_create_war(uuid), public.galaxy_respond_war(uuid,boolean)
+ public.galaxy_upgrade(text), public.galaxy_refuel(), public.galaxy_create_war(uuid), public.galaxy_respond_war(uuid,boolean)
  to authenticated;
