@@ -245,7 +245,7 @@
   #planetOverview{display:none}
   body.planet-mode .world-label{display:none}
   body.planet-mode .map-tools,body.planet-mode .settlement-jumps,body.planet-mode .map-help,
-  body.planet-mode .stage-card>.hint,body.planet-mode #peopleSection,
+  body.planet-mode .stage-card>.hint,body.planet-mode #galaxySection,body.planet-mode #peopleSection,
   body.planet-mode .systems,body.planet-mode #godPowers,body.planet-mode #planetShop{display:none}
   body.planet-mode .game-topbar a[href="#peopleSection"],body.planet-mode .game-topbar a[href="#godPowers"],
   body.planet-mode .game-topbar a[href="#planetShop"]{display:none}
@@ -278,7 +278,7 @@
   <a href="#historySection">📜 ประวัติศาสตร์</a>
   <a href="#godPowers">⚡ พลังพระเจ้า</a>
   <a href="#peopleSection">👥 มนุษย์</a>
-  <a href="#galaxySection">🌌 จักรวาล</a>
+  <a href="galaxy.html">🌌 Galaxy ออนไลน์</a>
   <a href="#cosmicClock">☸️ มหากัป</a>
   <a href="#planetShop">💎 ร้านค้า</a>
   <a href="#saveSection">💾 เซฟเกม</a>
@@ -318,6 +318,7 @@
           <button type="button" data-world-command="century">☸️ ผ่านไป 100 ปี</button>
         </div>
         <div id="planetCommandFeedback" class="planet-command-feedback" role="status" aria-live="polite">เลือกสิ่งที่ต้องการเปลี่ยน แล้วชมผลบนดาวได้ทันที</div>
+        <div class="actions"><a class="btn" href="galaxy.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:#283d5a;border:1px solid #749bc4;color:#eef4ff;font-weight:800;border-radius:10px;padding:11px 14px;margin-top:12px">🌌 เข้าสู่ Galaxy ออนไลน์ · ค้าขาย / สงคราม</a></div>
         <div class="planet-command-note">คำสั่งระดับดาวไม่มีค่าศรัทธาในโหมดผู้ควบคุมโลก · การเพิ่มอุตสาหกรรมอาจสร้างมลพิษ และวิวัฒนาการจะเดินต่อเองตามสภาพดาว · ดาวอื่นในจักรวาลต้องมาจากผู้เล่นจริงเท่านั้น</div>
       </div>
       <div class="map-tools" aria-label="ควบคุมแผนที่">
