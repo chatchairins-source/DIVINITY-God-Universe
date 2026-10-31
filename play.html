@@ -788,7 +788,7 @@
  function ensureWorldGrowth(silent=false){
    const desired=targetMapTier(Math.max(people.length,Math.min(state.demography?.population||0,210)));
    if(growTerrain(desired[1],desired[2])){
-     if(!silent){pushLog('🗺️ อาณาเขตใหม่เปิดให้สำรวจ '+W+'×'+H+' ช่อง โดยเก็บชุมชนและสิ่งปลูกสร้างเดิมทั้งหมด');saveWorld(true)}
+     if(!silent){pushLog('🗺️ อาณาเขตใหม่เปิดให้สำรวจ '+W+'×'+H+' ช่อง โดยเก็บชุมชนและสิ่งปลูกสร้างเดิมทั้งหมด');if(!state.bulk)saveWorld(true)}
    }
  }
 
@@ -1459,6 +1459,43 @@
    E('centuryProgressText').textContent='⏳ กำลังหยุดและเก็บความคืบหน้า...';
    E('cancelCentury').disabled=true;
  }
+ // The 30-day simulation uses the same non-blocking progress UI. Every
+ // yield occurs after four ticks (one planetary day), so saves remain valid.
+ async function advancePlanetDays(days=30){
+   if(centuryTask||!state.demography)return false;
+   const total=Math.max(1,Math.min(365,Math.floor(days)));
+   const task={cancelled:false};centuryTask=task;
+   const wasPaused=state.pause,wasBulk=state.bulk,begin=state.day;
+   state.pause=true;state.bulk=true;
+   const panel=E('centuryProgressArea'),bar=E('centuryProgress'),message=E('centuryProgressText');
+   const longButton=E('skipCentury'),shortButton=E('skip'),stop=E('cancelCentury');
+   panel.hidden=false;longButton.disabled=true;shortButton.disabled=true;stop.disabled=false;
+   bar.max=total;bar.value=0;message.textContent='⏳ เตรียมข้าม '+total+' วัน...';
+   let completed=0,error=null;
+   try{
+     await new Promise(resolve=>requestAnimationFrame(resolve));
+     while(completed<total&&!task.cancelled){
+       // No more than one simulated day per browser frame.
+       for(let i=0;i<4;i++)tick();
+       completed++;
+       bar.value=completed;
+       message.textContent='⏳ ผ่านไป '+completed+' / '+total+' วัน · ประชากร '+
+         state.demography.population.toLocaleString('en-US')+' คน';
+       await new Promise(resolve=>requestAnimationFrame(resolve));
+     }
+   }catch(e){error=e;}
+   finally{
+     state.bulk=wasBulk;state.pause=wasPaused;centuryTask=null;
+     panel.hidden=true;longButton.disabled=false;shortButton.disabled=false;stop.disabled=false;
+     renderLogs();
+     try{updateUI();saveWorld(true);}catch(e){error=error||e;}
+     E('saveState').textContent=error?
+       '⚠️ จำลองไม่ครบ: '+String(error.message||error)+' · ผ่านไป '+completed+' วัน':
+       task.cancelled?'🛑 หยุดข้ามเวลาแล้ว · ผ่านไป '+completed+' วัน · บันทึกโลกแล้ว':
+       '✅ ข้ามไป '+completed+' วัน จากวันที่ '+begin+' · บันทึกโลกแล้ว';
+   }
+   return !error&&!task.cancelled;
+ }
  async function advancePlanetCentury(years=100){
    if(centuryTask||!state.demography)return false;
    const total=Math.max(1,Math.min(1000,Math.floor(years)));
@@ -1468,7 +1505,7 @@
    const d=state.demography,initialPopulation=d.population,initialYear=state.year;
    const box=E('centuryProgressArea'),bar=E('centuryProgress'),msg=E('centuryProgressText'),
      action=E('skipCentury'),stop=E('cancelCentury');
-   box.hidden=false;action.disabled=true;stop.disabled=false;bar.max=total;bar.value=0;
+   box.hidden=false;action.disabled=true;E('skip').disabled=true;stop.disabled=false;bar.max=total;bar.value=0;
    msg.textContent='⏳ กำลังเตรียมจำลอง '+total+' ปี';
    let completed=0,error=null;
    try{
@@ -1517,6 +1554,7 @@
      box.hidden=true;action.disabled=false;stop.disabled=false;
      renderLogs();
      try{updateUI();saveWorld(true);}catch(e){error=error||e;}
+     E('skip').disabled=false;
      E('saveState').textContent=error?
        '⚠️ ข้ามเวลาไม่ครบ: '+String(error.message||error)+' · ผ่านไป '+completed+' ปี':
        task.cancelled?'🛑 ยกเลิกแล้ว · ผ่านไป '+completed+' ปี เริ่มจากปีดาว '+initialYear+' · บันทึกแล้ว':
@@ -2178,7 +2216,7 @@
  document.querySelectorAll('[data-fate]').forEach(b=>b.addEventListener('click',()=>setFate(b.dataset.fate)));
  document.querySelectorAll('[data-speed]').forEach(b=>b.addEventListener('click',()=>{state.speed=Number(b.dataset.speed);updateUI()}));
  E('pause').addEventListener('click',()=>{state.pause=!state.pause;updateUI()});
- E('skip').addEventListener('click',()=>{state.bulk=true;for(let i=0;i<120;i++)tick();state.bulk=false;updateUI();pushLog('⏭ ผ่านไป 30 วัน · ระบบโลกและประชากรพัฒนาไปตามเวลา');saveWorld(true)});
+ E('skip').addEventListener('click',()=>{if(!centuryTask)void advancePlanetDays(30)});
  E('skipCentury').addEventListener('click',()=>{
    if(centuryTask)return;
    if(!confirm('ข้าม 100 ปีแบบสรุป? ผู้คนมีอายุเพิ่มขึ้นและอาจเสียชีวิต สามารถยกเลิกระหว่างคำนวณ โดยระบบจะเก็บปีที่ทำเสร็จแล้ว'))return;
